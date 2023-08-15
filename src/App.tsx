@@ -16,18 +16,14 @@ const tags: Set<string> = new Set(
 const QUERY_REGEXP = new RegExp('".*?"|[^\\s]+', 'g');
 const QUOTEED_TOKEN_REGEXP = new RegExp('^"(.*)"$');
 
-function getURL(name: string): string {
-  return `https://remnant2.wiki.fextralife.com/${name.replace(' ', '+')}`;
-}
-
 const List = React.memo(function List({ entities }: { entities: Entity[] }) {
   return (
     <div className="list">
       {entities.map((entity) => (
         <a
-          key={entity.name}
+          key={entity.id}
           className="list-item"
-          href={getURL(entity.name)}
+          href={entity.linkURL}
           target="_blank"
           rel="noreferrer">
           <antd.Card className="card" hoverable={true} size="small">
