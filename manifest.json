@@ -1,0 +1,34 @@
+{
+  "short_name": "Baldur's Gate III: Browser",
+  "name": "Baldur's Gate III: Item / Spell / Perk Browser",
+  "description": "Browser for items, spells, perks, etc... for Baldur's Gate III.",
+  "lang": "en-US",
+  "start_url": "/bg3browser/",
+  "scope": "/bg3browser/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-256x256.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
