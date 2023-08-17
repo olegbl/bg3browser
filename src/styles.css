@@ -8,10 +8,6 @@ body,
   font-family: sans-serif;
 }
 
-.bold {
-  font-weight: bold;;
-}
-
 .app {
   padding: 12px;
 }
@@ -110,6 +106,10 @@ body,
   margin: 0;
 }
 
-.ant-descriptions-item-label {
+.card-descriptions .ant-descriptions-item-label {
   white-space: nowrap;
+}
+
+.passive-label {
+  font-weight: bold;
 }

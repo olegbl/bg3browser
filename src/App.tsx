@@ -2,11 +2,10 @@ import './styles.css';
 import * as React from 'react';
 import * as antd from 'antd';
 import * as icons from '@ant-design/icons';
-import { Entity } from './Types';
 import data from './data';
-import { TaobaoSquareFilled } from '@ant-design/icons';
+import CardList from './CardList';
 
-const tags: Set<string> = new Set(
+const TAGS: Set<string> = new Set(
   data.reduce(
     (agg: string[], entity): string[] => [...agg, ...entity.tags],
     [],
@@ -15,221 +14,6 @@ const tags: Set<string> = new Set(
 
 const QUERY_REGEXP = new RegExp('".*?"|[^\\s]+', 'g');
 const QUOTEED_TOKEN_REGEXP = new RegExp('^"(.*)"$');
-
-const CARD_RARITY: { [key: string]: string | null } = {
-  Common: 'card-rarity-common',
-  Uncommon: 'card-rarity-uncommon',
-  Rare: 'card-rarity-rare',
-  VeryRare: 'card-rarity-veryrare',
-  Legendary: 'card-rarity-legendary',
-  Unknown: null,
-};
-
-const GAME_TEXT_REGEXP = /^()$|\[(\d+)\]|<LSTag.*?>(.*?)<\/LSTag>/g;
-
-function GameText({
-  value,
-  params,
-}: {
-  value?: string | null;
-  params?: string[] | null;
-}) {
-  if (value == null) {
-    return null;
-  }
-
-  const tokens = [];
-  const matches = (value ?? '').split(GAME_TEXT_REGEXP);
-  let part = 0;
-  let param = -1;
-  for (const match of matches) {
-    if (match === undefined && part === 0) {
-      part = 1;
-    } else if (part !== 0) {
-      part++;
-      // end of match
-      if (part > 3) {
-        part = 0;
-      }
-    }
-    if (part === 1) {
-      // ignore it, just a marker
-      continue;
-    } else if (part === 2) {
-      if (match !== undefined) {
-        // [int]
-        param++;
-        tokens.push(
-          <span className="bold">
-            {(params != null ? params[param] : null) ?? match}
-          </span>,
-        );
-      }
-    } else if (part === 3) {
-      if (match !== undefined) {
-        // <LSTag>text</LSTag>
-        tokens.push(<span className="bold">{match}</span>);
-      }
-    } else {
-      tokens.push(match);
-    }
-  }
-  return <>{tokens}</>;
-}
-
-const List = React.memo(function List({ entities }: { entities: Entity[] }) {
-  return (
-    <div className="list">
-      {entities.map((entity) => {
-        return (
-          <a
-            key={entity.id}
-            className="list-item"
-            href={entity.linkURL}
-            target="_blank"
-            rel="noreferrer">
-            <antd.Card
-              className={[
-                'card',
-                CARD_RARITY[entity.metadata.rarity ?? 'Unknown'],
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              hoverable={true}
-              size="small">
-              <div className="card-content">
-                <antd.Avatar
-                  className="card-avatar"
-                  shape="square"
-                  size={48}
-                  src={entity.iconURL}
-                />
-                <antd.Space className="card-info" direction="vertical">
-                  <antd.Typography className="card-name">
-                    {entity.name}
-                  </antd.Typography>
-                  <antd.Typography>
-                    <GameText value={entity.description} />
-                  </antd.Typography>
-                  <antd.Descriptions
-                    className="card-descriptions"
-                    bordered
-                    title={null}
-                    size="small">
-                    {entity.metadata.armorClass && (
-                      <antd.Descriptions.Item label="Armor Class" span={3}>
-                        {entity.metadata.armorClass}
-                      </antd.Descriptions.Item>
-                    )}
-                    {entity.metadata.damage && (
-                      <antd.Descriptions.Item
-                        label={
-                          entity.metadata.damageVersatile == null
-                            ? 'Damage'
-                            : '1H Damage'
-                        }
-                        span={3}>
-                        {entity.metadata.damage}
-                      </antd.Descriptions.Item>
-                    )}
-                    {entity.metadata.damageVersatile && (
-                      <antd.Descriptions.Item label="2H Damage" span={3}>
-                        {entity.metadata.damageVersatile}
-                      </antd.Descriptions.Item>
-                    )}
-                    {entity.metadata.boosts?.map((boost) => (
-                      <antd.Descriptions.Item
-                        key={boost}
-                        label="Boost"
-                        span={3}>
-                        {boost}
-                      </antd.Descriptions.Item>
-                    ))}
-                    {entity.metadata.passives?.map((passive) => (
-                      <antd.Descriptions.Item
-                        key={passive.name}
-                        label="Passive"
-                        span={3}>
-                        <antd.Tooltip
-                          title={
-                            <div>
-                              <div>{passive.id}</div>
-                              {passive.boosts?.length === 0 ? null : (
-                                <antd.Descriptions
-                                  className="card-descriptions"
-                                  bordered
-                                  title={null}
-                                  size="small">
-                                  {passive.boosts?.map((boost) => (
-                                    <antd.Descriptions.Item
-                                      key={boost}
-                                      label="Boost"
-                                      span={3}>
-                                      {boost}
-                                    </antd.Descriptions.Item>
-                                  ))}
-                                </antd.Descriptions>
-                              )}
-                            </div>
-                          }>
-                          <div className="card-description-label">
-                            {passive.iconURL && (
-                              <antd.Avatar
-                                className="card-description-label-icon"
-                                shape="square"
-                                size={24}
-                                src={passive.iconURL}
-                              />
-                            )}
-                            {passive.name}
-                          </div>
-                          {
-                            // @ts-ignore - my ts setup seems broken
-                            <antd.Typography.Text type="secondary">
-                              <GameText
-                                value={passive.description}
-                                params={passive.descriptionParams}
-                              />
-                            </antd.Typography.Text>
-                          }
-                        </antd.Tooltip>
-                      </antd.Descriptions.Item>
-                    ))}
-                  </antd.Descriptions>
-                  <antd.Space className="card-tags" wrap>
-                    {entity.tags.map((tag) => {
-                      const tagEl = (
-                        <antd.Tag
-                          key={tag}
-                          className="card-tag"
-                          color="processing">
-                          {tag}
-                        </antd.Tag>
-                      );
-                      if (tag === 'Item') {
-                        return (
-                          <antd.Tooltip
-                            title={
-                              entity.metadata.templateID == null
-                                ? null
-                                : `Template ID: ${entity.metadata.templateID}`
-                            }>
-                            {tagEl}
-                          </antd.Tooltip>
-                        );
-                      }
-                      return tagEl;
-                    })}
-                  </antd.Space>
-                </antd.Space>
-              </div>
-            </antd.Card>
-          </a>
-        );
-      })}
-    </div>
-  );
-});
 
 function Content() {
   // @ts-ignore
@@ -253,7 +37,7 @@ function Content() {
     if (partialQuery === '') {
       return [];
     }
-    return Array.from(tags)
+    return Array.from(TAGS)
       .filter(
         (tag) =>
           tag.toLowerCase().includes(partialQuery) &&
@@ -323,7 +107,7 @@ function Content() {
             />
           </antd.AutoComplete>
           <React.Suspense fallback={null}>
-            <List entities={filteredEntities} />
+            <CardList entities={filteredEntities} />
           </React.Suspense>
         </antd.Layout.Content>
       </antd.Layout>

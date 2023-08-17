@@ -1,7 +1,7 @@
-type Boost = string;
+export type IBoost = string;
 
-type Passive = {
-  boosts?: Boost[] | null;
+export type IPassive = {
+  boosts?: IBoost[] | null;
   description?: string | null;
   descriptionParams?: string[] | null;
   iconURL?: string | null;
@@ -18,11 +18,11 @@ export type Entity = {
   tags: string[];
   metadata: {
     armorClass?: string | null;
-    boosts?: Boost[] | null;
+    boosts?: IBoost[] | null;
     damage?: string | null;
     damageVersatile?: string | null;
     food?: string | null;
-    passives?: Passive[] | null;
+    passives?: IPassive[] | null;
     range?: string | null;
     rarity?: string | null;
     templateID?: string | null;
