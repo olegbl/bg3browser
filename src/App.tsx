@@ -16,40 +16,83 @@ const tags: Set<string> = new Set(
 const QUERY_REGEXP = new RegExp('".*?"|[^\\s]+', 'g');
 const QUOTEED_TOKEN_REGEXP = new RegExp('^"(.*)"$');
 
+const CARD_RARITY: { [key: string]: string | null } = {
+  Common: 'card-rarity-common',
+  Uncommon: 'card-rarity-uncommon',
+  Rare: 'card-rarity-rare',
+  VeryRare: 'card-rarity-veryrare',
+  Legendary: 'card-rarity-legendary',
+  Unknown: null,
+};
+
 const List = React.memo(function List({ entities }: { entities: Entity[] }) {
   return (
     <div className="list">
-      {entities.map((entity) => (
-        <a
-          key={entity.id}
-          className="list-item"
-          href={entity.linkURL}
-          target="_blank"
-          rel="noreferrer">
-          <antd.Card className="card" hoverable={true} size="small">
-            <div className="card-content">
-              <antd.Avatar
-                className="card-avatar"
-                size={48}
-                src={entity.iconURL}
-              />
-              <antd.Space className="card-info" direction="vertical">
-                <antd.Typography className="card-name">
-                  {entity.name}
-                </antd.Typography>
-                <antd.Typography>{entity.description}</antd.Typography>
-                <antd.Space className="card-tags" wrap>
-                  {entity.tags.map((tag) => (
-                    <antd.Tag key={tag} className="card-tag" color="processing">
-                      {tag}
-                    </antd.Tag>
-                  ))}
+      {entities.map((entity) => {
+        return (
+          <a
+            key={entity.id}
+            className="list-item"
+            href={entity.linkURL}
+            target="_blank"
+            rel="noreferrer">
+            <antd.Card
+              className={[
+                'card',
+                CARD_RARITY[entity.metadata.rarity ?? 'Unknown'],
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              hoverable={true}
+              size="small">
+              <div className="card-content">
+                <antd.Avatar
+                  className="card-avatar"
+                  shape="square"
+                  size={48}
+                  src={entity.iconURL}
+                />
+                <antd.Space className="card-info" direction="vertical">
+                  <antd.Typography className="card-name">
+                    {entity.name}
+                  </antd.Typography>
+                  <antd.Typography>
+                    {entity.description}
+                    <antd.Descriptions title={null}>
+                      {entity.metadata.damage && (
+                        <antd.Descriptions.Item
+                          label={
+                            entity.metadata.damageVersatile == null
+                              ? 'Damage'
+                              : '1H Damage'
+                          }
+                          span={3}>
+                          {entity.metadata.damage}
+                        </antd.Descriptions.Item>
+                      )}
+                      {entity.metadata.damageVersatile && (
+                        <antd.Descriptions.Item label="2H Damage" span={3}>
+                          {entity.metadata.damageVersatile}
+                        </antd.Descriptions.Item>
+                      )}
+                    </antd.Descriptions>
+                  </antd.Typography>
+                  <antd.Space className="card-tags" wrap>
+                    {entity.tags.map((tag) => (
+                      <antd.Tag
+                        key={tag}
+                        className="card-tag"
+                        color="processing">
+                        {tag}
+                      </antd.Tag>
+                    ))}
+                  </antd.Space>
                 </antd.Space>
-              </antd.Space>
-            </div>
-          </antd.Card>
-        </a>
-      ))}
+              </div>
+            </antd.Card>
+          </a>
+        );
+      })}
     </div>
   );
 });

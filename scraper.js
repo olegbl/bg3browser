@@ -8,36 +8,167 @@ const pngjs = require('pngjs');
 
 const parser = new xml2js.Parser();
 
+const DEBUG = false;
+
+const logger = {
+  log: (...args) => DEBUG && console.log('[D]', ...args),
+  info: (...args) => console.info('[I]', ...args),
+  warn: (...args) => console.warn('[W]', ...args),
+  error: (...args) => console.error('[E]', ...args),
+};
+
 Array.prototype.select = function (value, key = 'id') {
   return this.find((item) => item?.$ != null && item?.$[key] === value);
 };
 
-Array.prototype.translate = function (value, translations, key = 'id') {
-  return translations[this.select(value, key)?.$?.handle];
+Array.prototype.translate = function (value, getTranslation, key = 'id') {
+  return getTranslation(this.select(value, key)?.$?.handle);
 };
 
+function getFilePath(pack, relativePath) {
+  return `C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted ${pack}/${relativePath}`;
+}
+
 function getWikiURL(name) {
-  return `https://bg3.wiki/wiki/${name.replace(' ', '_')}`;
+  return `https://bg3.wiki/wiki/${name.replace(/ /g, '_')}`;
 }
 
 function unquote(value) {
   return value.substring(1, value.length - 1);
 }
 
+function cleanTags(tags) {
+  const cleanedTags = [];
+  for (const tag of tags) {
+    if (tag == null) {
+      continue;
+    }
+    const subtags = PROPERTIES[tag] ??
+      PROFICIENCY_GROUPS[tag] ??
+      RARITIES[tag] ?? [tag];
+    cleanedTags.push(...subtags);
+  }
+  // apply one handed tag if weapon is not two handed or versatile
+  if (
+    cleanedTags.includes('Weapon') &&
+    !cleanedTags.includes('Two Handed') &&
+    !cleanedTags.includes('Versatile')
+  ) {
+    cleanedTags.push('One Handed');
+  }
+  // unique tags
+  return Array.from(new Set(cleanedTags));
+}
+
+const RARITIES = {
+  Common: ['Common'],
+  Uncommon: ['Uncommon'],
+  Rare: ['Rare'],
+  VeryRare: ['Very Rare'],
+  Legendary: ['Legendary'],
+};
+
+const ITEM_SLOTS = {
+  Amulet: ['Amulet'],
+  Boots: ['Boots'],
+  Breast: ['Breast'],
+  Cloak: ['Cloak'],
+  Gloves: ['Gloves'],
+  Helmet: ['Helmet'],
+  'Melee Main Weapon': ['Weapon', 'Melee'],
+  'Melee Offhand Weapon': ['Weapon', 'Offhand'],
+  MusicalInstrument: ['Musical Instrument'],
+  'Ranged Main Weapon': ['Weapon', 'Ranged'],
+  Ring: ['Ring'],
+  Underwear: ['Underwear'],
+  VanityBody: ['Camp Outfit'],
+  VanityBoots: ['Camp Boots'],
+};
+
+const PROPERTIES = {
+  AddToHotbar: [], // internal
+  Ammunition: ['Ammunition'],
+  Dippable: ['Dippable'],
+  Finesse: ['Finesse'],
+  Heavy: ['Heavy'],
+  Light: ['Light'],
+  Loading: [], // not implemented
+  Magical: ['Magical'],
+  Melee: [], // duplicative of item slot
+  NoDualWield: [], // internal
+  NotSheathable: [], // internal
+  Reach: ['Reach'],
+  Thrown: ['Thrown'],
+  Torch: ['Torch'],
+  Twohanded: ['Two Handed'],
+  Unstowable: ['Unstowable'],
+  Versatile: ['Versatile'],
+};
+
+const PROFICIENCY_GROUPS = {
+  Battleaxes: ['Battleaxe'],
+  Clubs: ['Club'],
+  Daggers: ['Dagger'],
+  Darts: ['Dart'],
+  Flails: ['Flail'],
+  Glaives: ['Glaive'],
+  Greataxes: ['Greataxe'],
+  Greatclubs: ['Greatclub'],
+  Greatswords: ['Greatsword'],
+  Halberds: ['Halberd'],
+  Handaxes: ['Handaxe'],
+  HandCrossbows: ['Hand Crossbow'],
+  HeavyArmor: ['Heavy'],
+  HeavyCrossbows: ['Heavy Crossbow'],
+  Javelins: ['Javelin'],
+  LightArmor: ['Light'],
+  LightCrossbows: ['Light Crossbow'],
+  LightHammers: ['Light Hammer'],
+  Longbows: ['Longbow'],
+  Longswords: ['Longsword'],
+  Maces: ['Mace'],
+  MartialWeapons: ['Martial Weapon'],
+  Mauls: ['Maul'],
+  MediumArmor: ['Medium'],
+  Morningstars: ['Morningstar'],
+  MusicalInstrument: [], // duplicative of item slot
+  Pikes: ['Pike'],
+  Quarterstaffs: ['Quarterstaff'],
+  Rapiers: ['Rapier'],
+  Scimitars: ['Scimitar'],
+  Shields: ['Shields'],
+  Shortbows: ['Shortbow'],
+  Shortswords: ['Shortsword'],
+  Sickles: ['Sickle'],
+  SimpleWeapons: ['Simple Weapon'],
+  Slings: ['Sling'],
+  Spears: ['Spear'],
+  Tridents: ['Trident'],
+  Warhammers: ['Warhammer'],
+  Warpicks: ['Warpick'],
+};
+
 const statRegex = /^[^"]* |".*?"| /g;
 async function getStatFileAsJSON(file) {
+  logger.log(`reading txt file ${file}`);
   const rawData = await fs.readFileSync(file);
   const lines = String(rawData).split('\n');
-  const entries = [];
+  const entries = {};
+  let entry = null;
   for (const line of lines) {
     const tokens = line.match(statRegex)?.filter((token) => token != ' ') ?? [];
     if (tokens.length === 0) {
       continue;
     }
-    if (tokens[0] === 'new entry ') {
-      entries.push({ id: unquote(tokens[1]), data: {} });
+    const id = unquote(tokens[1]);
+    if (id == null || id === '') {
+      logger.warn(`invalid stat entry ${line}`);
+      continue;
     }
-    const entry = entries[entries.length - 1];
+    if (tokens[0] === 'new entry ') {
+      entry = { id, data: {} };
+      entries[id] = entry;
+    }
     if (tokens[0] === 'type ') {
       entry.type = unquote(tokens[1]);
     }
@@ -51,103 +182,249 @@ async function getStatFileAsJSON(file) {
   return entries;
 }
 
-async function getDDSIconPartAsBase64URI(file, xStart, xEnd, yStart, yEnd) {
-  return new Promise(async (resolve, reject) => {
-    const data = await fs.readFileSync(file);
-    const buffer = toArrayBuffer(data);
-    const metadata = ddsParser.parseHeaders(buffer);
-    const image = metadata.images[0];
-    const { width: imageWidth, height: imageHeight } = image.shape;
-    const rgba = ddsParser.decodeDds(
-      new Uint8Array(buffer.slice(image.offset, image.offset + image.length)),
-      metadata.format,
-      imageWidth,
-      imageHeight,
-    );
-    const png = new pngjs.PNG({
-      width: imageWidth,
-      height: imageHeight,
-    });
-    for (let y = 0; y < imageHeight; y++) {
-      for (let x = 0; x < imageWidth; x++) {
-        const idx = (y * imageWidth + x) * 4;
-        png.data[idx] = rgba[idx];
-        png.data[idx + 1] = rgba[idx + 1];
-        png.data[idx + 2] = rgba[idx + 2];
-        png.data[idx + 3] = rgba[idx + 3];
-      }
-    }
-    const pngBuffer = pngjs.PNG.sync.write(png);
-    const left = Math.floor(xStart * imageWidth);
-    const top = Math.floor(yStart * imageHeight);
-    const width = Math.floor((xEnd - xStart) * imageWidth);
-    const height = Math.floor((yEnd - yStart) * imageHeight);
-    sharp(pngBuffer)
-      .extract({ left, top, width, height })
-      .toBuffer((error, buffer) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve(`data:image/png;base64,${buffer.toString('base64')}`);
-      });
+const ICON_FILES = [
+  [
+    getFilePath('Shared.pak', 'Public/Shared/GUI/Icons_Items.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/Shared/Assets/Textures/Icons/Icons_Items.dds',
+    ),
+  ],
+  [
+    getFilePath('Shared.pak', 'Public/Shared/GUI/Icons_Items_2.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/Shared/Assets/Textures/Icons/Icons_Items_2.dds',
+    ),
+  ],
+  [
+    getFilePath('Shared.pak', 'Public/Shared/GUI/Icons_Items_3.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/Shared/Assets/Textures/Icons/Icons_Items_3.dds',
+    ),
+  ],
+  [
+    getFilePath('Shared.pak', 'Public/Shared/GUI/Icons_Items_4.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/Shared/Assets/Textures/Icons/Icons_Items_4.dds',
+    ),
+  ],
+  [
+    getFilePath('Shared.pak', 'Public/Shared/GUI/Icons_Items_5.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/Shared/Assets/Textures/Icons/Icons_Items_5.dds',
+    ),
+  ],
+  [
+    getFilePath('Shared.pak', 'Public/Shared/GUI/Icons_Items_6.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/Shared/Assets/Textures/Icons/Icons_Items_6.dds',
+    ),
+  ],
+  [
+    getFilePath('Shared.pak', 'Public/SharedDev/GUI/Icons_Items_Dev.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/SharedDev/Assets/Textures/Icons/Icons_Items_Dev.dds',
+    ),
+  ],
+  [
+    getFilePath('Shared.pak', 'Public/Shared/GUI/New_EquipmentIcons.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/Shared/Assets/Textures/Icons/New_EquipmentIcons.dds',
+    ),
+  ],
+  [
+    getFilePath('Shared.pak', 'Public/Shared/GUI/Icons_Skills.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/Shared/Assets/Textures/Icons/Icons_Skills.dds',
+    ),
+  ],
+];
+
+async function getDDSFileAsPNGBuffer(file) {
+  logger.log(`reading dds file ${file}`);
+  const data = await fs.readFileSync(file);
+  const buffer = toArrayBuffer(data);
+  const metadata = ddsParser.parseHeaders(buffer);
+  const image = metadata.images[0];
+  const { width: imageWidth, height: imageHeight } = image.shape;
+  const rgba = ddsParser.decodeDds(
+    new Uint8Array(buffer.slice(image.offset, image.offset + image.length)),
+    metadata.format,
+    imageWidth,
+    imageHeight,
+  );
+  const png = new pngjs.PNG({
+    width: imageWidth,
+    height: imageHeight,
   });
+  for (let y = 0; y < imageHeight; y++) {
+    for (let x = 0; x < imageWidth; x++) {
+      const idx = (y * imageWidth + x) * 4;
+      png.data[idx] = rgba[idx];
+      png.data[idx + 1] = rgba[idx + 1];
+      png.data[idx + 2] = rgba[idx + 2];
+      png.data[idx + 3] = rgba[idx + 3];
+    }
+  }
+  return { pngBuffer: pngjs.PNG.sync.write(png), imageWidth, imageHeight };
 }
 
-async function getIconAsBase64URI(iconID) {
-  // TODO: also look at other icon files
-  // TODO: should probably parse these all at ones to make it faster
-  const icons = await getXMLFileAsJSON(
-    'C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Shared.pak/Public/Shared/GUI/Icons_Items.lsx',
+async function getIcons() {
+  const buffers = {};
+  const icons = {};
+  await Promise.all(
+    ICON_FILES.map(async ([lsxPath, ddsPath]) => {
+      // read dds file
+      buffers[ddsPath] = await getDDSFileAsPNGBuffer(ddsPath);
+
+      // read xml file
+      const xml = await getXMLFileAsJSON(lsxPath);
+      xml.save.region.forEach((region) =>
+        region.node[0].children[0].node.forEach((node) => {
+          const iconID = node.attribute.select('MapKey')?.$?.value;
+          if (iconID == null) {
+            return;
+          }
+          const xStart = parseFloat(node.attribute.select('U1').$.value);
+          const xEnd = parseFloat(node.attribute.select('U2').$.value);
+          const yStart = parseFloat(node.attribute.select('V1').$.value);
+          const yEnd = parseFloat(node.attribute.select('V2').$.value);
+          icons[iconID] = { xStart, xEnd, yStart, yEnd, ddsPath };
+        }),
+      );
+    }),
   );
-  const icon = icons.save.region[0].node[0].children[0].node.find(
-    (node) => node.attribute.select('MapKey').$.value === iconID,
-  );
-  if (icon == null) {
-    return null;
+  async function getIconURI(iconID) {
+    return new Promise(async (resolve, reject) => {
+      const { xStart, xEnd, yStart, yEnd, ddsPath } =
+        icons[iconID] ?? icons['Generated_' + iconID] ?? {};
+      if (ddsPath == null) {
+        logger.error(`could not find metadata for icon "${iconID}"`);
+        resolve(null);
+        return;
+      }
+      const { pngBuffer, imageWidth, imageHeight } = buffers[ddsPath] ?? {};
+      if (pngBuffer == null) {
+        logger.error(
+          `could not find texture for icon "${iconID}" (${ddsPath})`,
+        );
+        resolve(null);
+        return;
+      }
+      const left = Math.floor(xStart * imageWidth);
+      const top = Math.floor(yStart * imageHeight);
+      const width = Math.floor((xEnd - xStart) * imageWidth);
+      const height = Math.floor((yEnd - yStart) * imageHeight);
+      sharp(pngBuffer)
+        .extract({ left, top, width, height })
+        .toBuffer((error, buffer) => {
+          if (error) {
+            logger.error(error.toString());
+            resolve(null);
+            return;
+          }
+          resolve(`data:image/png;base64,${buffer.toString('base64')}`);
+        });
+    });
   }
-  return await getDDSIconPartAsBase64URI(
-    'C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Icons.pak/Public/Shared/Assets/Textures/Icons/Icons_Items.dds',
-    parseFloat(icon.attribute.select('U1').$.value),
-    parseFloat(icon.attribute.select('U2').$.value),
-    parseFloat(icon.attribute.select('V1').$.value),
-    parseFloat(icon.attribute.select('V2').$.value),
-  );
+  return getIconURI;
 }
 
 async function getXMLFileAsJSON(file) {
+  logger.log(`reading xml file ${file}`);
   const rawData = await fs.readFileSync(file);
   return await parser.parseStringPromise(rawData);
 }
 
-async function getRootTemplate(templateID) {
-  const sharedFile = `C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Shared.pak/Public/Shared/RootTemplates/Extracted/${templateID}.lsx`;
-  const gustavFile = `C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Gustav.pak/Public/Gustav/RootTemplates/Extracted/${templateID}.lsx`;
-  if (await fs.existsSync(sharedFile)) {
-    return await getXMLFileAsJSON(sharedFile);
-  } else if (await fs.existsSync(gustavFile)) {
-    return await getXMLFileAsJSON(gustavFile);
+const templateCache = {};
+async function getTemplate(templateID) {
+  if (templateCache[templateID] != null) {
+    return templateCache[templateID];
   }
-  return null;
+  const files = [
+    getFilePath(
+      'Shared.pak',
+      `Public/Shared/RootTemplates/Extracted/${templateID}.lsx`,
+    ),
+    getFilePath(
+      'Gustav.pak',
+      `Public/Gustav/RootTemplates/Extracted/${templateID}.lsx`,
+    ),
+    getFilePath(
+      'Shared.pak',
+      `Public/SharedDev/RootTemplates/Extracted/${templateID}.lsx`,
+    ),
+    getFilePath(
+      'Gustav.pak',
+      `Public/GustavDev/RootTemplates/Extracted/${templateID}.lsx`,
+    ),
+  ];
+  let json = null;
+  for (const file of files) {
+    if (await fs.existsSync(file)) {
+      json = await getXMLFileAsJSON(file);
+      break;
+    }
+  }
+  if (json == null) {
+    logger.warn(`could not find .lsx file for template "${templateID}"`);
+    return null;
+  }
+  const template = {};
+  const attributes =
+    json.save.region[0].node[0].children[0].node[0].attribute.filter(
+      (attribute) => attribute != null,
+    );
+  for (const attribute of attributes) {
+    const { id, value, handle } = attribute.$;
+    template[id] = value ?? handle;
+    if (id === 'ParentTemplateId' && value !== '') {
+      template.ParentTemplate = await getTemplate(value);
+    }
+  }
+  template.GetValue = (key) => {
+    if (template[key]) {
+      return template[key];
+    }
+    if (template.ParentTemplate != null) {
+      return template.ParentTemplate.GetValue(key);
+    }
+    return null;
+  };
+  templateCache[templateID] = template;
+  return template;
 }
 
 async function getEnglishTranslations() {
   const english = await getXMLFileAsJSON(
-    'C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted English.pak/Localization/English/english.xml',
+    getFilePath('English.pak', 'Localization/English/english.xml'),
   );
   const translations = {};
   for (const item of english.contentList.content) {
     translations[item.$.contentuid] = item._;
   }
-  return translations;
+  return function getTranslation(translationID) {
+    return translations[translationID];
+  };
 }
 
-async function getFeats(file, translations) {
+async function getFeats(file, getTranslation) {
   const feats = await getXMLFileAsJSON(file);
   return feats.save.region[0].node[0].children[0].node.map((child) => {
     const id = child.attribute.select('UUID').$.value;
-    const name = child.attribute.translate('DisplayName', translations);
-    const description = child.attribute.translate('Description', translations);
+    const name = child.attribute.translate('DisplayName', getTranslation);
+    const description = child.attribute.translate(
+      'Description',
+      getTranslation,
+    );
     return {
       id,
       name,
@@ -155,98 +432,150 @@ async function getFeats(file, translations) {
       iconURL: '',
       linkURL: getWikiURL(name),
       tags: ['Feat'],
+      metadata: {},
     };
   });
 }
 
-async function getArmor(file, translations) {
-  const entries = await getStatFileAsJSON(file);
-  for (const entry of entries) {
-    if (!entry.data.RootTemplate) {
-      continue;
+const ITEM_FILES = [
+  getFilePath('Shared.pak', 'Public/Shared/Stats/Generated/Data/Weapon.txt'),
+  getFilePath('Gustav.pak', 'Public/Gustav/Stats/Generated/Data/Weapon.txt'),
+  getFilePath('Shared.pak', 'Public/SharedDev/Stats/Generated/Data/Weapon.txt'),
+  getFilePath('Gustav.pak', 'Public/GustavDev/Stats/Generated/Data/Weapon.txt'),
+  getFilePath('Shared.pak', 'Public/Shared/Stats/Generated/Data/Armor.txt'),
+  getFilePath('Gustav.pak', 'Public/Gustav/Stats/Generated/Data/Armor.txt'),
+  getFilePath('Shared.pak', 'Public/SharedDev/Stats/Generated/Data/Armor.txt'),
+  getFilePath('Gustav.pak', 'Public/GustavDev/Stats/Generated/Data/Armor.txt'),
+  // TODO: Object.txt?
+];
+
+async function getItems(getTranslation, getIconURI) {
+  // fetch all entries
+  let entries = {};
+  for (const file of ITEM_FILES) {
+    entries = { ...entries, ...(await getStatFileAsJSON(file)) };
+  }
+
+  // process entries
+  for (const entry of Object.values(entries)) {
+    if (entry.using != null) {
+      entry.parent = entries[entry.using];
     }
-    const template = await getRootTemplate(entry.data.RootTemplate);
-    if (!template) {
-      continue;
-    }
-    const node = template.save.region[0].node[0].children[0].node[0];
-    const name = node.attribute.translate('DisplayName', translations);
-    const description = node.attribute.translate('Description', translations);
-    const icon = node.attribute.select('Icon')?.$?.value;
-    if (!name || !description) {
-      continue;
-    }
-    entry.template = {
-      name,
-      description,
-      icon,
+    entry.GetValue = (key) => {
+      if (entry[key]) {
+        return entry[key];
+      }
+      if (entry.parent) {
+        return entry.parent.GetValue(key);
+      }
+      return null;
+    };
+    entry.GetData = (key) => {
+      if (entry.data && entry.data[key]) {
+        return entry.data[key];
+      }
+      if (entry.parent) {
+        return entry.parent.GetData(key);
+      }
+      return null;
     };
   }
-  return await Promise.all(
-    entries
-      .filter((entry) => entry.template != null)
-      .map(async (entry) => ({
-        id: `${entry.id}:${entry.data.RootTemplate}`,
-        name: entry.template.name,
-        description: entry.template.description,
-        iconURL: (await getIconAsBase64URI(entry.template.icon)) ?? '#',
-        linkURL: getWikiURL(entry.template.name),
-        tags: ['Item'],
-      })),
-  );
-}
 
-async function getWeapons(file, translations) {
-  const entries = await getStatFileAsJSON(file);
-  for (const entry of entries) {
-    if (!entry.data.RootTemplate) {
+  // parse items from entries
+  const items = [];
+  for (const entry of Object.values(entries)) {
+    const templateID = entry.GetData('RootTemplate');
+    if (!templateID) {
+      logger.warn(`could not find template id for item "${entry.id}"`);
       continue;
     }
-    const template = await getRootTemplate(entry.data.RootTemplate);
+    const template = await getTemplate(templateID);
     if (!template) {
+      logger.warn(`could not find template for item "${entry.id}"`);
       continue;
     }
-    const node = template.save.region[0].node[0].children[0].node[0];
-    const name = node.attribute.translate('DisplayName', translations);
-    const description = node.attribute.translate('Description', translations);
-    const icon = node.attribute.select('Icon')?.$?.value;
-    if (!name || !description) {
+    const name = getTranslation(template.GetValue('DisplayName'));
+    const description = getTranslation(template.GetValue('Description')) ?? '';
+    if (!name) {
+      logger.warn(`could not find name for item "${entry.id}"`);
       continue;
     }
-    entry.template = {
+    const iconURL = await getIconURI(template.GetValue('Icon'));
+    if (!iconURL) {
+      logger.warn(`could not find icon for item "${name}"`);
+    }
+
+    if (entry.GetData('UseConditions') != null) {
+      // items with these don't seem to be usable by players, so ignore them
+      continue;
+    }
+
+    const rarity = entry.GetData('Rarity') ?? 'Common';
+    const slots = ITEM_SLOTS[entry.GetData('Slot')] ?? [];
+    const properties = entry.GetData('Weapon Properties')?.split(';') ?? [];
+    const groups = entry.GetData('Proficiency Group')?.split(';') ?? [];
+
+    const damageType = entry.GetData('Damage Type');
+    const damage = entry.GetData('Damage');
+    const damageVersatile = entry.GetData('VersatileDamage');
+    const boosts = (entry.GetData('DefaultBoosts') ?? '')
+      .split(';')
+      .map((boost) => {
+        const enchantment = boost.match(/WeaponEnchantment\((\d+)\)/);
+        if (enchantment) {
+          return enchantment[1];
+        }
+        const extra = boost.match(/WeaponDamage\(([^,]+), ([^\)]+)\)/);
+        if (extra) {
+          return `${extra[1]} (${extra[2]})`;
+        }
+        return null;
+      })
+      .filter((boost) => boost != null);
+    const totalDamage = [
+      damageType == null ? damage : `${damage} (${damageType})`,
+      ...boosts,
+    ].join(' + ');
+    const totalDamageVersatile =
+      damageVersatile == null
+        ? null
+        : [
+            damageType == null ? damage : `${damageVersatile} (${damageType})`,
+            ...boosts,
+          ].join(' + ');
+
+    items.push({
+      id: `${entry.id}:${templateID}`,
       name,
       description,
-      icon,
-    };
+      iconURL: iconURL ?? '#',
+      linkURL: getWikiURL(name),
+      tags: cleanTags([
+        'Item',
+        rarity,
+        entry.GetData('Unique') === '1' ? 'Unique' : null,
+        'Equipment',
+        ...slots,
+        ...properties,
+        ...groups,
+        damageType,
+      ]),
+      metadata: {
+        templateID,
+        damage: totalDamage,
+        damageVersatile: totalDamageVersatile,
+        food: entry.GetData('SupplyValue'),
+        range: entry.GetData('WeaponRange'),
+        rarity,
+        weight: entry.GetData('Weight'),
+      },
+    });
   }
-  return await Promise.all(
-    entries
-      .filter((entry) => entry.template != null)
-      .map(async (entry) => ({
-        id: `${entry.id}:${entry.data.RootTemplate}`,
-        name: entry.template.name,
-        description: entry.template.description,
-        iconURL: (await getIconAsBase64URI(entry.template.icon)) ?? '#',
-        linkURL: getWikiURL(entry.template.name),
-        tags: [
-          'Item',
-          entry.data.Rarity,
-          'Equipment',
-          'Weapon',
-          entry.data['Damage Type'],
-          entry.data.Damage,
-          ...(entry.data['Weapon Properties']?.split(';') ?? []).map((value) =>
-            value.replace('Twohanded', 'Two-Handed'),
-          ),
-          ...(entry.data['Proficiency Group']?.split(';') ?? []).map((value) =>
-            value.substring(0, value.length - 1).replace('Weapon', ''),
-          ),
-        ].filter(Boolean),
-      })),
-  );
+
+  return items;
 }
 
-async function getOldEntities() {
+async function getExistingData() {
   const oldDataTs = fs.readFileSync('./src/data.tsx', {
     encoding: 'utf8',
   });
@@ -264,31 +593,18 @@ async function getOldEntities() {
 }
 
 async function scrapeData() {
-  const oldEntities = getOldEntities();
-
-  const translations = await getEnglishTranslations();
+  const startTime = Date.now();
+  const data = getExistingData();
+  const getTranslation = await getEnglishTranslations();
+  const getIconURI = await getIcons();
 
   const entities = [
     ...(await getFeats(
-      'C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Shared.pak/Public/Shared/Feats/FeatDescriptions.lsx',
-      translations,
+      getFilePath('Shared.pak', 'Public/Shared/Feats/FeatDescriptions.lsx'),
+      getTranslation,
+      getIconURI,
     )),
-    ...(await getArmor(
-      'C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Shared.pak/Public/Shared/Stats/Generated/Data/Armor.txt',
-      translations,
-    )),
-    ...(await getArmor(
-      'C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Gustav.pak/Public/Gustav/Stats/Generated/Data/Armor.txt',
-      translations,
-    )),
-    ...(await getWeapons(
-      'C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Shared.pak/Public/Shared/Stats/Generated/Data/Weapon.txt',
-      translations,
-    )),
-    ...(await getWeapons(
-      'C:/Steam/steamapps/common/Baldurs Gate 3/Data/Extracted Gustav.pak/Public/Gustav/Stats/Generated/Data/Weapon.txt',
-      translations,
-    )),
+    ...(await getItems(getTranslation, getIconURI)),
   ];
 
   await fs.writeFileSync(
@@ -298,6 +614,8 @@ async function scrapeData() {
     )};\n\nexport default data;\n`,
     'utf8',
   );
+
+  logger.info(`Scraping completed in ${Date.now() - startTime}ms`);
 }
 
 scrapeData();
