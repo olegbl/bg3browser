@@ -510,6 +510,9 @@ async function getPassives(getTranslation, getIconURI) {
       );
     }
 
+    const descriptionParams =
+      entry.GetData('DescriptionParams')?.split('; ') ?? [];
+
     const icon = entry.GetData('Icon');
     const iconURL = icon == null ? null : await getIconURI(icon);
 
@@ -520,6 +523,7 @@ async function getPassives(getTranslation, getIconURI) {
       id,
       name,
       description,
+      descriptionParams,
       iconURL,
       boosts,
     };
@@ -588,6 +592,18 @@ async function getItems(getTranslation, getIconURI, getPassive) {
     const properties = entry.GetData('Weapon Properties')?.split(';') ?? [];
     const groups = entry.GetData('Proficiency Group')?.split(';') ?? [];
 
+    const armorClass = entry.GetData('ArmorClass');
+    const armorClassAbility = entry.GetData('Armor Class Ability');
+    const armorClassAbilityCap = entry.GetData('Ability Modifier Cap');
+    const armorClassTotal = [
+      armorClass,
+      armorClassAbility == null || armorClassAbility === 'None'
+        ? null
+        : `${armorClassAbilityCap} (${armorClassAbility})`,
+    ]
+      .filter(Boolean)
+      .join(' + ');
+
     const damageType = entry.GetData('Damage Type');
     const damage = entry.GetData('Damage');
     const damageVersatile = entry.GetData('VersatileDamage');
@@ -605,11 +621,11 @@ async function getItems(getTranslation, getIconURI, getPassive) {
         return null;
       })
       .filter((boost) => boost != null);
-    const totalDamage = [
+    const damageTotal = [
       damageType == null ? damage : `${damage} (${damageType})`,
       ...damageBoosts,
     ].join(' + ');
-    const totalDamageVersatile =
+    const damageVersatileTotal =
       damageVersatile == null
         ? null
         : [
@@ -661,9 +677,10 @@ async function getItems(getTranslation, getIconURI, getPassive) {
         damageType,
       ]),
       metadata: {
+        armorClass: armorClassTotal,
         boosts,
-        damage: totalDamage,
-        damageVersatile: totalDamageVersatile,
+        damage: damageTotal,
+        damageVersatile: damageVersatileTotal,
         food: entry.GetData('SupplyValue'),
         passives,
         range: entry.GetData('WeaponRange'),
@@ -702,11 +719,11 @@ async function scrapeData() {
   const getPassive = await getPassives(getTranslation, getIconURI);
 
   const entities = [
-    ...(await getFeats(
-      getFilePath('Shared.pak', 'Public/Shared/Feats/FeatDescriptions.lsx'),
-      getTranslation,
-      getIconURI,
-    )),
+    // ...(await getFeats(
+    //   getFilePath('Shared.pak', 'Public/Shared/Feats/FeatDescriptions.lsx'),
+    //   getTranslation,
+    //   getIconURI,
+    // )),
     ...(await getItems(getTranslation, getIconURI, getPassive)),
   ];
 

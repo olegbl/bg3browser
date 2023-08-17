@@ -3,6 +3,7 @@ type Boost = string;
 type Passive = {
   boosts?: Boost[] | null;
   description?: string | null;
+  descriptionParams?: string[] | null;
   iconURL?: string | null;
   id: string;
   name?: string | null;
@@ -16,6 +17,7 @@ export type Entity = {
   linkURL: string;
   tags: string[];
   metadata: {
+    armorClass?: string | null;
     boosts?: Boost[] | null;
     damage?: string | null;
     damageVersatile?: string | null;

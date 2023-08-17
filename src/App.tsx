@@ -27,7 +27,13 @@ const CARD_RARITY: { [key: string]: string | null } = {
 
 const GAME_TEXT_REGEXP = /^()$|\[(\d+)\]|<LSTag.*?>(.*?)<\/LSTag>/g;
 
-function GameText({ value }: { value?: string | null }) {
+function GameText({
+  value,
+  params,
+}: {
+  value?: string | null;
+  params?: string[] | null;
+}) {
   if (value == null) {
     return null;
   }
@@ -35,6 +41,7 @@ function GameText({ value }: { value?: string | null }) {
   const tokens = [];
   const matches = (value ?? '').split(GAME_TEXT_REGEXP);
   let part = 0;
+  let param = -1;
   for (const match of matches) {
     if (match === undefined && part === 0) {
       part = 1;
@@ -49,11 +56,20 @@ function GameText({ value }: { value?: string | null }) {
       // ignore it, just a marker
       continue;
     } else if (part === 2) {
-      // [int]
-      tokens.push(<span className="bold">{match}</span>);
+      if (match !== undefined) {
+        // [int]
+        param++;
+        tokens.push(
+          <span className="bold">
+            {(params != null ? params[param] : null) ?? match}
+          </span>,
+        );
+      }
     } else if (part === 3) {
-      // <LSTag>text</LSTag>
-      tokens.push(<span className="bold">{match}</span>);
+      if (match !== undefined) {
+        // <LSTag>text</LSTag>
+        tokens.push(<span className="bold">{match}</span>);
+      }
     } else {
       tokens.push(match);
     }
@@ -100,6 +116,11 @@ const List = React.memo(function List({ entities }: { entities: Entity[] }) {
                     bordered
                     title={null}
                     size="small">
+                    {entity.metadata.armorClass && (
+                      <antd.Descriptions.Item label="Armor Class" span={3}>
+                        {entity.metadata.armorClass}
+                      </antd.Descriptions.Item>
+                    )}
                     {entity.metadata.damage && (
                       <antd.Descriptions.Item
                         label={
@@ -131,22 +152,25 @@ const List = React.memo(function List({ entities }: { entities: Entity[] }) {
                         span={3}>
                         <antd.Tooltip
                           title={
-                            passive.boosts?.length === 0 ? null : (
-                              <antd.Descriptions
-                                className="card-descriptions"
-                                bordered
-                                title={null}
-                                size="small">
-                                {passive.boosts?.map((boost) => (
-                                  <antd.Descriptions.Item
-                                    key={boost}
-                                    label="Boost"
-                                    span={3}>
-                                    {boost}
-                                  </antd.Descriptions.Item>
-                                ))}
-                              </antd.Descriptions>
-                            )
+                            <div>
+                              <div>{passive.id}</div>
+                              {passive.boosts?.length === 0 ? null : (
+                                <antd.Descriptions
+                                  className="card-descriptions"
+                                  bordered
+                                  title={null}
+                                  size="small">
+                                  {passive.boosts?.map((boost) => (
+                                    <antd.Descriptions.Item
+                                      key={boost}
+                                      label="Boost"
+                                      span={3}>
+                                      {boost}
+                                    </antd.Descriptions.Item>
+                                  ))}
+                                </antd.Descriptions>
+                              )}
+                            </div>
                           }>
                           <div className="card-description-label">
                             {passive.iconURL && (
@@ -162,7 +186,10 @@ const List = React.memo(function List({ entities }: { entities: Entity[] }) {
                           {
                             // @ts-ignore - my ts setup seems broken
                             <antd.Typography.Text type="secondary">
-                              <GameText value={passive.description} />
+                              <GameText
+                                value={passive.description}
+                                params={passive.descriptionParams}
+                              />
                             </antd.Typography.Text>
                           }
                         </antd.Tooltip>
@@ -170,14 +197,29 @@ const List = React.memo(function List({ entities }: { entities: Entity[] }) {
                     ))}
                   </antd.Descriptions>
                   <antd.Space className="card-tags" wrap>
-                    {entity.tags.map((tag) => (
-                      <antd.Tag
-                        key={tag}
-                        className="card-tag"
-                        color="processing">
-                        {tag}
-                      </antd.Tag>
-                    ))}
+                    {entity.tags.map((tag) => {
+                      const tagEl = (
+                        <antd.Tag
+                          key={tag}
+                          className="card-tag"
+                          color="processing">
+                          {tag}
+                        </antd.Tag>
+                      );
+                      if (tag === 'Item') {
+                        return (
+                          <antd.Tooltip
+                            title={
+                              entity.metadata.templateID == null
+                                ? null
+                                : `Template ID: ${entity.metadata.templateID}`
+                            }>
+                            {tagEl}
+                          </antd.Tooltip>
+                        );
+                      }
+                      return tagEl;
+                    })}
                   </antd.Space>
                 </antd.Space>
               </div>
