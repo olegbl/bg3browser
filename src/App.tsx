@@ -25,6 +25,42 @@ const CARD_RARITY: { [key: string]: string | null } = {
   Unknown: null,
 };
 
+const GAME_TEXT_REGEXP = /^()$|\[(\d+)\]|<LSTag.*?>(.*?)<\/LSTag>/g;
+
+function GameText({ value }: { value?: string | null }) {
+  if (value == null) {
+    return null;
+  }
+
+  const tokens = [];
+  const matches = (value ?? '').split(GAME_TEXT_REGEXP);
+  let part = 0;
+  for (const match of matches) {
+    if (match === undefined && part === 0) {
+      part = 1;
+    } else if (part !== 0) {
+      part++;
+      // end of match
+      if (part > 3) {
+        part = 0;
+      }
+    }
+    if (part === 1) {
+      // ignore it, just a marker
+      continue;
+    } else if (part === 2) {
+      // [int]
+      tokens.push(<span className="bold">{match}</span>);
+    } else if (part === 3) {
+      // <LSTag>text</LSTag>
+      tokens.push(<span className="bold">{match}</span>);
+    } else {
+      tokens.push(match);
+    }
+  }
+  return <>{tokens}</>;
+}
+
 const List = React.memo(function List({ entities }: { entities: Entity[] }) {
   return (
     <div className="list">
@@ -57,26 +93,82 @@ const List = React.memo(function List({ entities }: { entities: Entity[] }) {
                     {entity.name}
                   </antd.Typography>
                   <antd.Typography>
-                    {entity.description}
-                    <antd.Descriptions title={null}>
-                      {entity.metadata.damage && (
-                        <antd.Descriptions.Item
-                          label={
-                            entity.metadata.damageVersatile == null
-                              ? 'Damage'
-                              : '1H Damage'
-                          }
-                          span={3}>
-                          {entity.metadata.damage}
-                        </antd.Descriptions.Item>
-                      )}
-                      {entity.metadata.damageVersatile && (
-                        <antd.Descriptions.Item label="2H Damage" span={3}>
-                          {entity.metadata.damageVersatile}
-                        </antd.Descriptions.Item>
-                      )}
-                    </antd.Descriptions>
+                    <GameText value={entity.description} />
                   </antd.Typography>
+                  <antd.Descriptions
+                    className="card-descriptions"
+                    bordered
+                    title={null}
+                    size="small">
+                    {entity.metadata.damage && (
+                      <antd.Descriptions.Item
+                        label={
+                          entity.metadata.damageVersatile == null
+                            ? 'Damage'
+                            : '1H Damage'
+                        }
+                        span={3}>
+                        {entity.metadata.damage}
+                      </antd.Descriptions.Item>
+                    )}
+                    {entity.metadata.damageVersatile && (
+                      <antd.Descriptions.Item label="2H Damage" span={3}>
+                        {entity.metadata.damageVersatile}
+                      </antd.Descriptions.Item>
+                    )}
+                    {entity.metadata.boosts?.map((boost) => (
+                      <antd.Descriptions.Item
+                        key={boost}
+                        label="Boost"
+                        span={3}>
+                        {boost}
+                      </antd.Descriptions.Item>
+                    ))}
+                    {entity.metadata.passives?.map((passive) => (
+                      <antd.Descriptions.Item
+                        key={passive.name}
+                        label="Passive"
+                        span={3}>
+                        <antd.Tooltip
+                          title={
+                            passive.boosts?.length === 0 ? null : (
+                              <antd.Descriptions
+                                className="card-descriptions"
+                                bordered
+                                title={null}
+                                size="small">
+                                {passive.boosts?.map((boost) => (
+                                  <antd.Descriptions.Item
+                                    key={boost}
+                                    label="Boost"
+                                    span={3}>
+                                    {boost}
+                                  </antd.Descriptions.Item>
+                                ))}
+                              </antd.Descriptions>
+                            )
+                          }>
+                          <div className="card-description-label">
+                            {passive.iconURL && (
+                              <antd.Avatar
+                                className="card-description-label-icon"
+                                shape="square"
+                                size={24}
+                                src={passive.iconURL}
+                              />
+                            )}
+                            {passive.name}
+                          </div>
+                          {
+                            // @ts-ignore - my ts setup seems broken
+                            <antd.Typography.Text type="secondary">
+                              <GameText value={passive.description} />
+                            </antd.Typography.Text>
+                          }
+                        </antd.Tooltip>
+                      </antd.Descriptions.Item>
+                    ))}
+                  </antd.Descriptions>
                   <antd.Space className="card-tags" wrap>
                     {entity.tags.map((tag) => (
                       <antd.Tag

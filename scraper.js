@@ -307,15 +307,13 @@ async function getIcons() {
       const { xStart, xEnd, yStart, yEnd, ddsPath } =
         icons[iconID] ?? icons['Generated_' + iconID] ?? {};
       if (ddsPath == null) {
-        logger.error(`could not find metadata for icon "${iconID}"`);
+        logger.warn(`could not find metadata for icon "${iconID}"`);
         resolve(null);
         return;
       }
       const { pngBuffer, imageWidth, imageHeight } = buffers[ddsPath] ?? {};
       if (pngBuffer == null) {
-        logger.error(
-          `could not find texture for icon "${iconID}" (${ddsPath})`,
-        );
+        logger.warn(`could not find texture for icon "${iconID}" (${ddsPath})`);
         resolve(null);
         return;
       }
@@ -411,8 +409,14 @@ async function getEnglishTranslations() {
   for (const item of english.contentList.content) {
     translations[item.$.contentuid] = item._;
   }
-  return function getTranslation(translationID) {
-    return translations[translationID];
+  return function getTranslation(handle) {
+    if (handle == null) {
+      return null;
+    }
+    const [id, version] = handle.split(';');
+    // ignore the version for now - it doesn't seem like multiple versions
+    // of the same translated string are included in the shipped game data
+    return translations[id];
   };
 }
 
@@ -420,11 +424,9 @@ async function getFeats(file, getTranslation) {
   const feats = await getXMLFileAsJSON(file);
   return feats.save.region[0].node[0].children[0].node.map((child) => {
     const id = child.attribute.select('UUID').$.value;
-    const name = child.attribute.translate('DisplayName', getTranslation);
-    const description = child.attribute.translate(
-      'Description',
-      getTranslation,
-    );
+    const name = child.attribute.translate('DisplayName', getTranslation) ?? '';
+    const description =
+      child.attribute.translate('Description', getTranslation) ?? '';
     return {
       id,
       name,
@@ -437,23 +439,12 @@ async function getFeats(file, getTranslation) {
   });
 }
 
-const ITEM_FILES = [
-  getFilePath('Shared.pak', 'Public/Shared/Stats/Generated/Data/Weapon.txt'),
-  getFilePath('Gustav.pak', 'Public/Gustav/Stats/Generated/Data/Weapon.txt'),
-  getFilePath('Shared.pak', 'Public/SharedDev/Stats/Generated/Data/Weapon.txt'),
-  getFilePath('Gustav.pak', 'Public/GustavDev/Stats/Generated/Data/Weapon.txt'),
-  getFilePath('Shared.pak', 'Public/Shared/Stats/Generated/Data/Armor.txt'),
-  getFilePath('Gustav.pak', 'Public/Gustav/Stats/Generated/Data/Armor.txt'),
-  getFilePath('Shared.pak', 'Public/SharedDev/Stats/Generated/Data/Armor.txt'),
-  getFilePath('Gustav.pak', 'Public/GustavDev/Stats/Generated/Data/Armor.txt'),
-  // TODO: Object.txt?
-];
-
-async function getItems(getTranslation, getIconURI) {
+async function getEntriesFromStatFiles(files) {
   // fetch all entries
   let entries = {};
-  for (const file of ITEM_FILES) {
-    entries = { ...entries, ...(await getStatFileAsJSON(file)) };
+  for (const file of files) {
+    const newEntries = await getStatFileAsJSON(file);
+    entries = { ...entries, ...newEntries };
   }
 
   // process entries
@@ -481,6 +472,75 @@ async function getItems(getTranslation, getIconURI) {
     };
   }
 
+  return entries;
+}
+
+const PASSIVE_FILES = [
+  getFilePath('Shared.pak', 'Public/Shared/Stats/Generated/Data/Passive.txt'),
+  getFilePath('Gustav.pak', 'Public/Gustav/Stats/Generated/Data/Passive.txt'),
+  getFilePath(
+    'Shared.pak',
+    'Public/SharedDev/Stats/Generated/Data/Passive.txt',
+  ),
+  getFilePath(
+    'Gustav.pak',
+    'Public/GustavDev/Stats/Generated/Data/Passive.txt',
+  ),
+];
+
+async function getPassives(getTranslation, getIconURI) {
+  const entries = await getEntriesFromStatFiles(PASSIVE_FILES);
+  return async function getPassive(id) {
+    const entry = entries[id];
+    if (entry == null) {
+      return null;
+    }
+
+    const nameHandle = entry.GetData('DisplayName');
+    const name = getTranslation(nameHandle) ?? '';
+    if (!name) {
+      logger.warn(`could not find name for passive "${id}" (${nameHandle})`);
+    }
+
+    const descriptionHandle = entry.GetData('Description');
+    const description = getTranslation(descriptionHandle) ?? '';
+    if (!name) {
+      logger.warn(
+        `could not find description for passive "${id}" (${descriptionHandle})`,
+      );
+    }
+
+    const icon = entry.GetData('Icon');
+    const iconURL = icon == null ? null : await getIconURI(icon);
+
+    // TODO: prettify for human consumption
+    const boosts = (entry.GetData('Boosts')?.split(';') ?? []).filter(Boolean);
+
+    return {
+      id,
+      name,
+      description,
+      iconURL,
+      boosts,
+    };
+  };
+}
+
+const ITEM_FILES = [
+  getFilePath('Shared.pak', 'Public/Shared/Stats/Generated/Data/Weapon.txt'),
+  getFilePath('Gustav.pak', 'Public/Gustav/Stats/Generated/Data/Weapon.txt'),
+  getFilePath('Shared.pak', 'Public/SharedDev/Stats/Generated/Data/Weapon.txt'),
+  getFilePath('Gustav.pak', 'Public/GustavDev/Stats/Generated/Data/Weapon.txt'),
+  getFilePath('Shared.pak', 'Public/Shared/Stats/Generated/Data/Armor.txt'),
+  getFilePath('Gustav.pak', 'Public/Gustav/Stats/Generated/Data/Armor.txt'),
+  getFilePath('Shared.pak', 'Public/SharedDev/Stats/Generated/Data/Armor.txt'),
+  getFilePath('Gustav.pak', 'Public/GustavDev/Stats/Generated/Data/Armor.txt'),
+  // TODO: Object.txt?
+];
+
+async function getItems(getTranslation, getIconURI, getPassive) {
+  const entries = await getEntriesFromStatFiles(ITEM_FILES);
+
   // parse items from entries
   const items = [];
   for (const entry of Object.values(entries)) {
@@ -494,8 +554,21 @@ async function getItems(getTranslation, getIconURI) {
       logger.warn(`could not find template for item "${entry.id}"`);
       continue;
     }
-    const name = getTranslation(template.GetValue('DisplayName'));
-    const description = getTranslation(template.GetValue('Description')) ?? '';
+
+    const nameHandle = template.GetValue('DisplayName');
+    const name = getTranslation(nameHandle) ?? '';
+    if (!name) {
+      logger.warn(`could not find name for item "${entry.id}" (${nameHandle})`);
+    }
+
+    const descriptionHandle = template.GetValue('Description');
+    const description = getTranslation(descriptionHandle) ?? '';
+    if (!name) {
+      logger.warn(
+        `could not find description for item "${entry.id}" (${descriptionHandle})`,
+      );
+    }
+
     if (!name) {
       logger.warn(`could not find name for item "${entry.id}"`);
       continue;
@@ -518,7 +591,7 @@ async function getItems(getTranslation, getIconURI) {
     const damageType = entry.GetData('Damage Type');
     const damage = entry.GetData('Damage');
     const damageVersatile = entry.GetData('VersatileDamage');
-    const boosts = (entry.GetData('DefaultBoosts') ?? '')
+    const damageBoosts = (entry.GetData('DefaultBoosts') ?? '')
       .split(';')
       .map((boost) => {
         const enchantment = boost.match(/WeaponEnchantment\((\d+)\)/);
@@ -534,15 +607,42 @@ async function getItems(getTranslation, getIconURI) {
       .filter((boost) => boost != null);
     const totalDamage = [
       damageType == null ? damage : `${damage} (${damageType})`,
-      ...boosts,
+      ...damageBoosts,
     ].join(' + ');
     const totalDamageVersatile =
       damageVersatile == null
         ? null
         : [
             damageType == null ? damage : `${damageVersatile} (${damageType})`,
-            ...boosts,
+            ...damageBoosts,
           ].join(' + ');
+
+    // TODO: prettify for human consumption
+    const boosts = [
+      ...(entry.GetData('Boosts')?.split(';') ?? []),
+      ...(entry.GetData('DefaultBoosts')?.split(';') ?? []),
+      ...(entry.GetData('BoostsOnEquipMainHand')?.split(';') ?? []),
+    ]
+      .filter(Boolean)
+      .filter(
+        (boost) =>
+          // handle that in damage calculations above
+          !boost.startsWith('WeaponEnchantment') &&
+          !boost.startsWith('WeaponEnchantment') &&
+          boost != 'WeaponProperty(Magical)',
+      );
+
+    const passiveIDs = [
+      ...(entry.GetData('PassivesMainHand')?.split(';') ?? []),
+      ...(entry.GetData('PassivesOnEquip')?.split(';') ?? []),
+    ];
+    const passives = [];
+    for (const passiveID of passiveIDs) {
+      const passive = await getPassive(passiveID);
+      if (passive != null) {
+        passives.push(passive);
+      }
+    }
 
     items.push({
       id: `${entry.id}:${templateID}`,
@@ -561,12 +661,14 @@ async function getItems(getTranslation, getIconURI) {
         damageType,
       ]),
       metadata: {
-        templateID,
+        boosts,
         damage: totalDamage,
         damageVersatile: totalDamageVersatile,
         food: entry.GetData('SupplyValue'),
+        passives,
         range: entry.GetData('WeaponRange'),
         rarity,
+        templateID,
         weight: entry.GetData('Weight'),
       },
     });
@@ -597,6 +699,7 @@ async function scrapeData() {
   const data = getExistingData();
   const getTranslation = await getEnglishTranslations();
   const getIconURI = await getIcons();
+  const getPassive = await getPassives(getTranslation, getIconURI);
 
   const entities = [
     ...(await getFeats(
@@ -604,7 +707,7 @@ async function scrapeData() {
       getTranslation,
       getIconURI,
     )),
-    ...(await getItems(getTranslation, getIconURI)),
+    ...(await getItems(getTranslation, getIconURI, getPassive)),
   ];
 
   await fs.writeFileSync(

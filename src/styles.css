@@ -8,6 +8,10 @@ body,
   font-family: sans-serif;
 }
 
+.bold {
+  font-weight: bold;;
+}
+
 .app {
   padding: 12px;
 }
@@ -27,32 +31,6 @@ body,
 
 .card {
   height: 100%;
-}
-
-.card-content {
-  display: flex;
-  align-items: row;
-  gap: 16px;
-}
-
-.card-avatar {
-  flex: 0 0 auto;
-}
-
-.card-info {
-  flex: 1 1 auto;
-}
-
-.card-name {
-  font-weight: bold;
-}
-
-.card-tags {
-  gap: 8px;
-}
-
-.card-tag {
-  margin: 0;
 }
 
 .card-rarity-common {
@@ -91,6 +69,47 @@ body,
   box-shadow: 0 0 4px 1px rgb(207, 147, 8, 0.5), 0 0 8px 2px rgb(207, 147, 8, 0.5);
 }
 
-.ant-descriptions-item {
-  padding-bottom: 2px !important;
+.card-content {
+  display: flex;
+  align-items: row;
+  gap: 16px;
+}
+
+.card-avatar {
+  flex: 0 0 auto;
+}
+
+.card-info {
+  flex: 1 1 auto;
+}
+
+.card-name {
+  font-weight: bold;
+}
+
+.card-descriptions {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+.card-description-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.card-description-label-icon {
+  margin-right: 4px;
+}
+
+.card-tags {
+  gap: 8px;
+}
+
+.card-tag {
+  margin: 0;
+}
+
+.ant-descriptions-item-label {
+  white-space: nowrap;
 }
