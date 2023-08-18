@@ -55,7 +55,7 @@ async function readAndParseStatFiles(files) {
       entry.parent = entries[entry.using];
     }
     entry.GetValue = (key) => {
-      if (entry[key]) {
+      if (entry[key] != null) {
         return entry[key];
       }
       if (entry.parent) {
@@ -64,7 +64,7 @@ async function readAndParseStatFiles(files) {
       return null;
     };
     entry.GetData = (key) => {
-      if (entry.data && entry.data[key]) {
+      if (entry.data && entry.data[key] != null) {
         return entry.data[key];
       }
       if (entry.parent) {

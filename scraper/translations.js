@@ -23,7 +23,6 @@ String.prototype.translate = function () {
   const translation = TRANSLATIONS[id];
   if (translation == null) {
     logger.warn(`could not find translation for handle "${id}"`);
-    return '';
   }
   return translation;
 };

@@ -32,13 +32,13 @@ String.prototype.toPassive = async function () {
   }
 
   const nameHandle = entry.GetData('DisplayName');
-  const name = nameHandle?.translate();
+  const name = nameHandle?.translate() ?? '';
   if (!name) {
     logger.warn(`could not find name for passive "${id}" (${nameHandle})`);
   }
 
   const descriptionHandle = entry.GetData('Description');
-  const description = descriptionHandle?.translate();
+  const description = descriptionHandle?.translate() ?? '';
   if (!name) {
     logger.warn(
       `could not find description for passive "${id}" (${descriptionHandle})`,

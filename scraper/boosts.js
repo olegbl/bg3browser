@@ -13,24 +13,32 @@ String.prototype.toBoosts = function () {
 };
 
 String.prototype.translateBoost = function () {
-  if (this.trim() == '') {
+  const boost = String(this);
+  if (boost == '') {
     return null;
   }
-  if (!UNTRANSLATED_BOOSTS.has(String(this))) {
-    UNTRANSLATED_BOOSTS.add(String(this));
+
+  // TODO: translate boosts somehow
+  // e.g.:
+  // CriticalHit(AttackTarget,Success,Never) = hf84b862bg8969g48d3g97b4g6e1e6c2e660a
+  // IF(not HasPassive('MediumArmorMaster', context.Source)):Disadvantage(Skill,Stealth) = he577f2d6g0e94g49bag9f02g9b319c2be0d9 where [1] = Stealth
+
+  if (!UNTRANSLATED_BOOSTS.has(boost)) {
+    UNTRANSLATED_BOOSTS.add(boost);
   }
   return this;
 };
 
 String.prototype.isBoostShown = function () {
-  if (this === '' || this === 'WeaponProperty(Magical)') {
+  const boost = String(this);
+  if (boost == '' || this === 'WeaponProperty(Magical)') {
     return false;
   }
   return true;
 };
 
 function logUntranslatedBoosts() {
-  logger.warn(
+  logger.debug(
     [
       `Could not find translations for the following boosts:`,
       ...UNTRANSLATED_BOOSTS,
