@@ -12,7 +12,7 @@ export type IPassive = {
   name?: string | null;
 };
 
-export type Entity = {
+export type IEntity = {
   id: string;
   name: string;
   description: string;

@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { Entity } from './Types';
+
+import type { IEntity } from './Types';
+
 import Card from './Card';
 
 type Props = {
-  entities: Entity[];
+  entities: IEntity[];
 };
 
 function CardList({ entities }: Props) {

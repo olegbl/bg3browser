@@ -1,9 +1,18 @@
 import './styles.css';
+
 import * as React from 'react';
 import * as antd from 'antd';
 import * as icons from '@ant-design/icons';
-import data from './data';
+
 import CardList from './CardList';
+import DebugContextProvider, { useIsDebugModeEnabled } from './DebugContext';
+import MeasurementsContextProvider, {
+  useMeasurementsMode,
+} from './MeasurementsContext';
+import ThemeContextProvider, { useThemePreference } from './ThemeContext';
+
+import data from './data';
+import useUrlState from './useUrlState';
 
 const TAGS: Set<string> = new Set(
   data.reduce(
@@ -19,9 +28,13 @@ function Content() {
   // @ts-ignore
   const [isPending, startTransition] = React.useTransition();
 
-  const [queryString, setQueryString] = React.useState(
-    new URL(window.location.href).searchParams.get('q') ?? '',
-  );
+  const { token: themeToken } = antd.theme.useToken();
+
+  const [debug, setDebug] = useIsDebugModeEnabled();
+  const [themePreference, setThemePreference] = useThemePreference();
+  const [measurementsMode, setMeasurementsMode] = useMeasurementsMode();
+
+  const [queryString, setQueryString] = useUrlState<string>('q', '');
   const [query, setQuery] = React.useState(queryString);
 
   const queryTokens = React.useMemo(
@@ -75,17 +88,13 @@ function Content() {
 
   return (
     <React.Suspense fallback={null}>
-      <antd.Layout style={{ minHeight: '100%' }}>
-        <antd.Layout.Content style={{ padding: 12 }}>
+      <antd.Layout className="app">
+        <div className="top-bar">
           <antd.AutoComplete
+            className="search-input"
             options={suggestions}
-            style={{ width: '100%', marginBottom: 12 }}
             value={queryString}
             onChange={(value: string): void => {
-              // update the URL
-              const url = new URL(window.location.href);
-              url.searchParams.set('q', value);
-              window.history.replaceState({}, '', url.toString());
               // update the search input
               setQueryString(value);
               // update the rest of the view (e.g. list)
@@ -106,6 +115,68 @@ function Content() {
               size="large"
             />
           </antd.AutoComplete>
+          <antd.Dropdown
+            menu={{
+              items: [
+                {
+                  key: 'imperial',
+                  label:
+                    'Measurements: ' +
+                    (measurementsMode === 'imperial' ? 'Imperial' : 'Metric'),
+                },
+                {
+                  key: 'theme',
+                  label:
+                    'Theme: ' +
+                    (themePreference === 'system'
+                      ? 'System'
+                      : themePreference === 'light'
+                      ? 'Light'
+                      : themePreference === 'dark'
+                      ? 'Dark'
+                      : 'Unknown'),
+                },
+                {
+                  key: 'debug',
+                  label: 'Debug Mode: ' + (debug ? 'Enabled' : 'Disabled'),
+                },
+              ],
+              onClick: (event) => {
+                if (event.key === 'imperial') {
+                  setMeasurementsMode((value) =>
+                    value === 'metric' ? 'imperial' : 'metric',
+                  );
+                }
+                if (event.key === 'theme') {
+                  setThemePreference((value) =>
+                    value === 'system'
+                      ? 'light'
+                      : value === 'light'
+                      ? 'dark'
+                      : value === 'dark'
+                      ? 'system'
+                      : 'system',
+                  );
+                }
+                if (event.key === 'debug') {
+                  setDebug((value) => !value);
+                }
+              },
+            }}>
+            <antd.Button
+              className="settings-button"
+              icon={<icons.SettingOutlined />}
+              size="large"
+            />
+          </antd.Dropdown>
+          <div
+            className="top-bar-content-transition"
+            style={{
+              backgroundImage: `linear-gradient(to bottom, ${themeToken.colorBgLayout}, rgba(0, 0, 0, 0))`,
+            }}
+          />
+        </div>
+        <antd.Layout.Content className="content">
           <React.Suspense fallback={null}>
             <CardList entities={filteredEntities} />
           </React.Suspense>
@@ -117,14 +188,12 @@ function Content() {
 
 export default function App() {
   return (
-    <antd.ConfigProvider
-      theme={{
-        // match app theme to OS theme
-        algorithm: window.matchMedia('(prefers-color-scheme: dark)').matches
-          ? antd.theme.darkAlgorithm
-          : antd.theme.defaultAlgorithm,
-      }}>
-      <Content />
-    </antd.ConfigProvider>
+    <DebugContextProvider>
+      <ThemeContextProvider>
+        <MeasurementsContextProvider>
+          <Content />
+        </MeasurementsContextProvider>
+      </ThemeContextProvider>
+    </DebugContextProvider>
   );
 }

@@ -31,7 +31,7 @@ String.prototype.translateBoost = function () {
 
 String.prototype.isBoostShown = function () {
   const boost = String(this);
-  if (boost == '' || this === 'WeaponProperty(Magical)') {
+  if (boost == '' || boost === 'WeaponProperty(Magical)') {
     return false;
   }
   return true;

@@ -23,7 +23,7 @@ async function scrapeData() {
 
   await fs.writeFileSync(
     './src/data.tsx',
-    `import {Entity} from './Types';\n\nconst data: Entity[] = ${JSON.stringify(
+    `import {IEntity} from './Types';\n\nconst data: IEntity[] = ${JSON.stringify(
       [...items],
     )};\n\nexport default data;\n`,
     'utf8',

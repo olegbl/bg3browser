@@ -1,11 +1,11 @@
 import * as React from 'react';
 import * as antd from 'antd';
-import { Entity } from './Types';
-import GameText from './GameText';
-import { getDistance } from './Measurements';
 
-// TODO: add option to toggle this
-const debug = true;
+import type { IEntity } from './Types';
+
+import { useIsDebugModeEnabled } from './DebugContext';
+import GameText from './GameText';
+import { useMeasurementsAdapters } from './MeasurementsContext';
 
 const CARD_RARITY_CLASSES: { [key: string]: string | null } = {
   Common: 'card-rarity-common',
@@ -16,11 +16,13 @@ const CARD_RARITY_CLASSES: { [key: string]: string | null } = {
 };
 
 type Props = {
-  entity: Entity;
+  entity: IEntity;
 };
 
 function Card({ entity }: Props) {
+  const [debug] = useIsDebugModeEnabled();
   const { token } = antd.theme.useToken();
+  const { getDistance, getWeight } = useMeasurementsAdapters();
 
   return (
     <antd.Card
@@ -90,7 +92,7 @@ function Card({ entity }: Props) {
                       <antd.Avatar
                         className="card-description-label-icon"
                         shape="square"
-                        size={24}
+                        size={36}
                         src={passive.iconURL}
                       />
                     )}
@@ -118,6 +120,11 @@ function Card({ entity }: Props) {
                   ))}
               </React.Fragment>
             ))}
+            {entity.metadata.weight && (
+              <antd.Descriptions.Item label="Weight" span={3}>
+                {getWeight(entity.metadata.weight)}
+              </antd.Descriptions.Item>
+            )}
           </antd.Descriptions>
           <antd.Space className="card-tags" wrap>
             {entity.tags.map((tag) => (
