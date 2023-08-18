@@ -27,7 +27,7 @@
     "typescript": "3.7.5"
   },
   "scripts": {
-    "scrape": "node --max-old-space-size=8192 scraper.js",
+    "scrape": "node --max-old-space-size=8192 scraper/scraper.js",
     "start": "react-app-rewired --max-old-space-size=8192 start",
     "build": "react-app-rewired --max-old-space-size=8192 build",
     "test": "react-app-rewired --max-old-space-size=8192 test",

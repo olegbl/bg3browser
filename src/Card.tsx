@@ -5,7 +5,7 @@ import GameText from './GameText';
 import { getDistance } from './Measurements';
 
 // TODO: add option to toggle this
-const debug = false;
+const debug = true;
 
 const CARD_RARITY_CLASSES: { [key: string]: string | null } = {
   Common: 'card-rarity-common',
@@ -41,7 +41,7 @@ function Card({ entity }: Props) {
           <antd.Typography>
             <GameText value={entity.description} />
             {debug &&
-              `(Entry: ${entity.id.split(':')[0]}, Template: ${
+              ` (Entry: ${entity.id.split(':')[0]}, Template: ${
                 entity.metadata.templateID
               })`}
           </antd.Typography>
@@ -55,30 +55,31 @@ function Card({ entity }: Props) {
                 {entity.metadata.armorClass}
               </antd.Descriptions.Item>
             )}
-            {entity.metadata.damage && (
+            {entity.metadata.damages?.map((damage, index) => (
               <antd.Descriptions.Item
+                key={`damage:${index}`}
                 label={
-                  entity.metadata.damageVersatile == null
+                  entity.metadata.damages?.length === 1
                     ? 'Damage'
-                    : '1H Damage'
+                    : index === 0
+                    ? '1H Damage'
+                    : index === 1
+                    ? '2H Damage'
+                    : 'Damage'
                 }
                 span={3}>
-                {entity.metadata.damage}
+                {damage}
               </antd.Descriptions.Item>
-            )}
-            {entity.metadata.damageVersatile && (
-              <antd.Descriptions.Item label="2H Damage" span={3}>
-                {entity.metadata.damageVersatile}
-              </antd.Descriptions.Item>
-            )}
+            ))}
             {entity.metadata.range && (
               <antd.Descriptions.Item label="Range" span={3}>
                 {getDistance(entity.metadata.range)}
               </antd.Descriptions.Item>
             )}
             {entity.metadata.boosts?.map((boost) => (
-              <antd.Descriptions.Item key={boost} label="Boost" span={3}>
-                {boost}
+              <antd.Descriptions.Item key={boost.id} label="Boost" span={3}>
+                {boost.label}
+                {debug && ` (${boost.id})`}
               </antd.Descriptions.Item>
             ))}
             {entity.metadata.passives?.map((passive) => (
@@ -107,8 +108,12 @@ function Card({ entity }: Props) {
                 </antd.Descriptions.Item>
                 {debug &&
                   passive.boosts?.map((boost) => (
-                    <antd.Descriptions.Item key={boost} label="Boost" span={3}>
-                      {boost}
+                    <antd.Descriptions.Item
+                      key={boost.id}
+                      label="Boost"
+                      span={3}>
+                      {boost.label}
+                      {debug && ` (${boost.id})`}
                     </antd.Descriptions.Item>
                   ))}
               </React.Fragment>

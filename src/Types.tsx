@@ -1,4 +1,7 @@
-export type IBoost = string;
+export type IBoost = {
+  id: string;
+  label: string;
+};
 
 export type IPassive = {
   boosts?: IBoost[] | null;
@@ -19,8 +22,7 @@ export type Entity = {
   metadata: {
     armorClass?: string | null;
     boosts?: IBoost[] | null;
-    damage?: string | null;
-    damageVersatile?: string | null;
+    damages?: string[] | null;
     food?: string | null;
     passives?: IPassive[] | null;
     range?: string | null;

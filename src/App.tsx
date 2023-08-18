@@ -62,11 +62,13 @@ function Content() {
             const plainToken = isInverted ? token.substring(1) : token;
             const matches =
               // the token can be a part of the name
-              entity.name.toLowerCase().includes(plainToken) ||
+              entity.name?.toLowerCase()?.includes(plainToken) ||
               // the token can be a part of the description
-              entity.description.toLowerCase().includes(plainToken) ||
+              entity.description?.toLowerCase()?.includes(plainToken) ||
               // the token can equal one of the tags
-              entity.tags.map((tag) => tag.toLowerCase()).includes(plainToken);
+              entity.tags
+                ?.map((tag) => tag?.toLowerCase())
+                ?.includes(plainToken);
             return isInverted ? !matches : matches;
           }),
       ),

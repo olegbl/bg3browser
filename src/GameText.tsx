@@ -38,14 +38,18 @@ export default function GameText({
         // [int]
         param++;
         tokens.push(
-          <span>{(params != null ? params[param] : null) ?? match}</span>,
+          <span key={`param:${param}`}>
+            {(params != null ? params[param] : null) ?? match}
+          </span>,
         );
       }
     } else if (part === 3) {
       if (match !== undefined) {
         // <LSTag>text</LSTag>
         tokens.push(
-          <span style={{ color: token.colorPrimaryText }}>{match}</span>,
+          <span key={`tag:${match}`} style={{ color: token.colorPrimaryText }}>
+            {match}
+          </span>,
         );
       }
     } else {
