@@ -75,7 +75,7 @@ const ICON_FILES = [
 ];
 
 async function readDDSFile(file) {
-  logger.log(`reading dds file ${file}`);
+  logger.debug(`reading dds file ${file}`);
   const data = await fs.readFileSync(file);
   const buffer = toArrayBuffer(data);
   const metadata = ddsParser.parseHeaders(buffer);

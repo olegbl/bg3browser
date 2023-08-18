@@ -6,7 +6,7 @@ const { logger } = require('./logger');
 const parser = new xml2js.Parser();
 
 async function readXMLFile(file) {
-  logger.log(`reading xml file ${file}`);
+  logger.debug(`reading xml file ${file}`);
   const rawData = await fs.readFileSync(file);
   return await parser.parseStringPromise(rawData);
 }
