@@ -1,7 +1,7 @@
 import * as antd from 'antd';
 import React, { useContext, useMemo } from 'react';
 
-import useUrlState from './useUrlState';
+import useSavedState from './useSavedState';
 import { MappingAlgorithm } from 'antd/es/config-provider/context';
 
 type IThemeMode = 'light' | 'dark';
@@ -35,7 +35,7 @@ export default function ThemeContextProvider({
 }: {
   children: React.ReactNode;
 }): JSX.Element {
-  const [themePreference, setThemePreference] = useUrlState<IThemePreference>(
+  const [themePreference, setThemePreference] = useSavedState<IThemePreference>(
     'theme',
     'system',
   );

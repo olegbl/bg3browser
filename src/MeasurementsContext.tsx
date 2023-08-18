@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import useUrlState from './useUrlState';
+import useSavedState from './useSavedState';
 
 type IMeasurementsMode = 'metric' | 'imperial';
 
@@ -17,7 +17,7 @@ export default function MeasurementsContextProvider({
   children: React.ReactNode;
 }): JSX.Element {
   const [measurementsMode, setMeasurementsMode] =
-    useUrlState<IMeasurementsMode>('measurements', 'metric');
+    useSavedState<IMeasurementsMode>('measurements', 'metric');
 
   const context = useMemo(
     (): IMeasurementsContext => ({
@@ -47,13 +47,15 @@ export function useMeasurementsMode(): [
 
 function getDistance(mode: IMeasurementsMode, value: number | string): string {
   if (typeof value === 'string') {
-    value = parseInt(value, 10) / 100;
+    value = parseFloat(value) / 100;
   }
   switch (mode) {
     case 'metric':
       return `${value} m`;
     case 'imperial':
-      return `${(value * 10) / 3} ft`;
+      // not all numbers convert cleanly because not all of them are shown in the game's UI
+      // for example, a Glaive's 2.5 m range becomes 8.33333... ft
+      return `${Math.floor((value * 1000) / 3) / 100} ft`;
   }
 }
 
