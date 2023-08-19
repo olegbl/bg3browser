@@ -1,5 +1,7 @@
 import './styles.css';
 
+import { IEntity } from './Types';
+
 import * as React from 'react';
 import * as antd from 'antd';
 import * as icons from '@ant-design/icons';
@@ -12,13 +14,13 @@ import MeasurementsContextProvider, {
 import SettingsButton from './SettingsButton';
 import ThemeContextProvider from './ThemeContext';
 
-import data from './data';
 import useUrlState from './useUrlState';
 import { getParametrizeString } from './ParametrizedText';
+import { data } from './data';
 
 const TAGS: Set<string> = new Set(
   data.reduce(
-    (agg: string[], entity): string[] => [...agg, ...entity.tags],
+    (agg: string[], entity: IEntity): string[] => [...agg, ...entity.tags],
     [],
   ),
 );

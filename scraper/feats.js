@@ -15,7 +15,7 @@ async function getFeats() {
       id,
       name,
       description,
-      iconURL: '',
+      icon: '',
       linkURL: getWikiURL(name),
       tags: ['Feat'],
       metadata: {},

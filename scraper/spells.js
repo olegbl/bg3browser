@@ -1,4 +1,5 @@
 const { getFilePath } = require('./files');
+const { includeIcon } = require('./icons');
 const { readAndParseStatFiles } = require('./statFileParser');
 
 const FILENAMES = [
@@ -45,8 +46,7 @@ String.prototype.toSpell = async function () {
   const descriptionHandle = entry.GetData('Description');
   const description = descriptionHandle?.translate() ?? '';
   const descriptionParams = entry.GetDataArray('DescriptionParams');
-  const icon = entry.GetData('Icon');
-  const iconURL = icon == null ? null : await icon.toIconURI();
+  const icon = await includeIcon(entry.GetData('Icon'));
 
   if (!name) {
     logger.warn(`could not find name for spell "${id}" (${nameHandle})`);
@@ -63,7 +63,7 @@ String.prototype.toSpell = async function () {
     name,
     description,
     descriptionParams,
-    iconURL,
+    icon,
   };
 };
 

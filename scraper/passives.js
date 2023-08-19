@@ -1,4 +1,5 @@
 const { getFilePath } = require('./files');
+const { includeIcon } = require('./icons');
 const { logger } = require('./logger');
 const { readAndParseStatFiles } = require('./statFileParser');
 
@@ -36,8 +37,7 @@ String.prototype.toPassive = async function () {
   const descriptionHandle = entry.GetData('Description');
   const description = descriptionHandle?.translate() ?? '';
   const descriptionParams = entry.GetDataArray('DescriptionParams');
-  const icon = entry.GetData('Icon');
-  const iconURL = icon == null ? null : await icon.toIconURI();
+  const icon = await includeIcon(entry.GetData('Icon'));
   const boosts = entry.GetDataArray('Boosts').toBoosts();
   const properties = entry.GetDataArray('Properties');
 
@@ -60,7 +60,7 @@ String.prototype.toPassive = async function () {
     name,
     description,
     descriptionParams,
-    iconURL,
+    icon,
     boosts,
   };
 };

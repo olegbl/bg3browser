@@ -15,7 +15,7 @@ const PROPERTIES = {
   Light: ['Light'],
   Loading: [], // not implemented
   Magical: ['Magical'],
-  Melee: [], // duplicative of item slot
+  Melee: ['Melee'],
   NoDualWield: [], // internal
   NotSheathable: [], // internal
   Reach: ['Reach'],
@@ -52,7 +52,7 @@ const PROFICIENCY_GROUPS = {
   Mauls: ['Maul'],
   MediumArmor: ['Medium'],
   Morningstars: ['Morningstar'],
-  MusicalInstrument: [], // duplicative of item slot
+  MusicalInstrument: ['Musical Instrument'],
   Pikes: ['Pike'],
   Quarterstaffs: ['Quarterstaff'],
   Rapiers: ['Rapier'],

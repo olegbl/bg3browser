@@ -3,6 +3,7 @@ const { readAndParseStatFiles } = require('./statFileParser');
 const { getFilePath } = require('./files');
 const { readTemplateFile } = require('./templateFileParser');
 const { processTags } = require('./tags');
+const { includeIcon } = require('./icons');
 
 function getWikiURL(name) {
   return `https://bg3.wiki/wiki/${name.replace(/ /g, '_')}`;
@@ -16,7 +17,7 @@ const ITEM_SLOTS = {
   Gloves: ['Gloves'],
   Helmet: ['Helmet'],
   'Melee Main Weapon': ['Weapon', 'Melee'],
-  'Melee Offhand Weapon': ['Weapon', 'Offhand'],
+  'Melee Offhand Weapon': ['Weapon', 'Melee', 'Offhand'],
   MusicalInstrument: ['Musical Instrument'],
   'Ranged Main Weapon': ['Weapon', 'Ranged'],
   Ring: ['Ring'],
@@ -71,10 +72,7 @@ async function getItems() {
       logger.warn(`could not find name for item "${entry.id}"`);
       continue;
     }
-    const iconURL = await template.GetValue('Icon').toIconURI();
-    if (!iconURL) {
-      logger.warn(`could not find icon for item "${name}"`);
-    }
+    const icon = await includeIcon(template.GetValue('Icon'));
 
     if (entry.GetData('UseConditions') != null) {
       // items with these don't seem to be usable by players, so ignore them
@@ -205,7 +203,7 @@ async function getItems() {
       id: `${entry.id}:${templateID}`,
       name,
       description,
-      iconURL: iconURL ?? '#',
+      icon,
       linkURL: getWikiURL(name),
       tags: processTags([
         'Item',

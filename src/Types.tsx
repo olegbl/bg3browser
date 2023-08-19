@@ -9,7 +9,7 @@ export type IPassive = {
   name: string;
   description: string;
   descriptionParams: string[];
-  iconURL: string | null;
+  icon: string | null;
   boosts: IBoost[];
 };
 
@@ -18,14 +18,14 @@ export type ISpell = {
   name: string;
   description: string;
   descriptionParams: string[];
-  iconURL: string | null;
+  icon: string | null;
 };
 
 export type IEntity = {
   id: string;
   name: string;
   description: string;
-  iconURL: string;
+  icon: string | null;
   linkURL: string;
   tags: string[];
   metadata: {
@@ -40,4 +40,9 @@ export type IEntity = {
     templateID: string | null;
     weight: string | null;
   };
+};
+
+// maps icon IDs to icon base64 encoded data URIs
+export type IIcons = {
+  [iconID: string]: string;
 };

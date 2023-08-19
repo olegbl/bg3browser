@@ -6,6 +6,7 @@ import type { IEntity } from './Types';
 import { useIsDebugModeEnabled } from './DebugContext';
 import { useMeasurementsAdapters } from './MeasurementsContext';
 import ParametrizedText from './ParametrizedText';
+import { icons } from './data';
 
 // antd's prevalence for modifying direct children while
 // prevnets them from being wrapped in proper React components
@@ -18,7 +19,7 @@ function getDescriptionRow({
   name = null,
   description,
   descriptionParams = [],
-  iconURL = null,
+  icon = null,
   children,
 }: {
   debug: boolean;
@@ -28,12 +29,13 @@ function getDescriptionRow({
   name?: string | null;
   description: string;
   descriptionParams?: string[];
-  iconURL?: string | null;
+  icon?: string | null;
   children?: React.ReactNode;
 }) {
   if (description == null) {
     return null;
   }
+  const iconURL = icons[icon ?? ''];
   return (
     <React.Fragment key={key}>
       <antd.Descriptions.Item label={label} span={3}>
@@ -82,6 +84,7 @@ type Props = {
 function Card({ entity }: Props) {
   const [debug] = useIsDebugModeEnabled();
   const { getDistance, getWeight } = useMeasurementsAdapters();
+  const iconURL = icons[entity.icon ?? ''];
 
   return (
     <antd.Card
@@ -95,7 +98,7 @@ function Card({ entity }: Props) {
           className="card-avatar"
           shape="square"
           size={48}
-          src={entity.iconURL}
+          src={iconURL}
         />
         <antd.Space className="card-info" direction="vertical">
           <antd.Typography className="card-name">{entity.name}</antd.Typography>
@@ -157,7 +160,7 @@ function Card({ entity }: Props) {
                 id: passive.id,
                 description: passive.description,
                 descriptionParams: passive.descriptionParams,
-                iconURL: passive.iconURL,
+                icon: passive.icon,
                 children:
                   debug &&
                   passive.boosts?.map((boost) =>
@@ -181,7 +184,7 @@ function Card({ entity }: Props) {
                 id: spell.id,
                 description: spell.description,
                 descriptionParams: spell.descriptionParams,
-                iconURL: spell.iconURL,
+                icon: spell.icon,
               }),
             )}
             {entity.metadata.weight && (

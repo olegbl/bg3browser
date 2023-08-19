@@ -2,6 +2,7 @@ const fs = require('fs');
 
 const { logUntranslatedBoosts } = require('./boosts');
 const { readIconFiles } = require('./iconFileParser');
+const { getIncludedIcons } = require('./icons');
 const { getItems } = require('./items');
 const { logger } = require('./logger');
 const { readPassives } = require('./passives');
@@ -23,11 +24,16 @@ async function scrapeData() {
 
   logUntranslatedBoosts();
 
+  const data = JSON.stringify([...items]);
+  const icons = JSON.stringify(getIncludedIcons());
+
   await fs.writeFileSync(
     './src/data.tsx',
-    `import {IEntity} from './Types';\n\nconst data: IEntity[] = ${JSON.stringify(
-      [...items],
-    )};\n\nexport default data;\n`,
+    `import {IEntity, IIcons} from './Types';
+
+export const data: IEntity[] = ${data};
+export const icons: IIcons = ${icons};
+`,
     'utf8',
   );
 

@@ -1,5 +1,4 @@
 const fs = require('fs');
-const sharp = require('sharp');
 const toArrayBuffer = require('buffer-to-arraybuffer');
 const ddsParser = require('dds-parser');
 const pngjs = require('pngjs');
@@ -141,42 +140,12 @@ async function readIconFiles() {
   }
 }
 
-const URIS = {};
+function getIconMetadata(iconID) {
+  return ICONS[iconID] ?? ICONS['Generated_' + iconID];
+}
 
-String.prototype.toIconURI = async function toIconURI() {
-  const iconID = this;
-  if (iconID === '') {
-    return null;
-  }
+function getIconBuffer(ddsPath) {
+  return BUFFERS[ddsPath];
+}
 
-  if (URIS[iconID]) {
-    return URIS[iconID];
-  }
-
-  const { xStart, xEnd, yStart, yEnd, ddsPath } =
-    ICONS[iconID] ?? ICONS['Generated_' + iconID] ?? {};
-
-  if (ddsPath == null) {
-    logger.warn(`could not find metadata for icon "${iconID}"`);
-    return null;
-  }
-
-  const { pngBuffer, imageWidth, imageHeight } = BUFFERS[ddsPath] ?? {};
-  if (pngBuffer == null) {
-    logger.warn(`could not find texture for icon "${iconID}" (${ddsPath})`);
-    return null;
-  }
-
-  const left = Math.floor(xStart * imageWidth);
-  const top = Math.floor(yStart * imageHeight);
-  const width = Math.floor((xEnd - xStart) * imageWidth);
-  const height = Math.floor((yEnd - yStart) * imageHeight);
-  const buffer = await sharp(pngBuffer)
-    .extract({ left, top, width, height })
-    .toBuffer();
-  const iconURI = `data:image/png;base64,${buffer.toString('base64')}`;
-  URIS[iconID] = iconURI;
-  return iconURI;
-};
-
-module.exports = { readDDSFile, readIconFiles };
+module.exports = { readDDSFile, readIconFiles, getIconMetadata, getIconBuffer };
