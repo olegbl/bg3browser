@@ -82,6 +82,9 @@ const ICON_FILES = [
 ];
 
 async function readDDSFile(file) {
+  if (!(await fs.existsSync(file))) {
+    return null;
+  }
   logger.debug(`reading dds file ${file}`);
   const data = await fs.readFileSync(file);
   const buffer = toArrayBuffer(data);
@@ -120,19 +123,21 @@ async function readIconFiles() {
 
     // read xml file
     const xml = await readXMLFile(lsxPath);
-    xml.save.region.forEach((region) =>
-      region.node[0].children[0].node.forEach((node) => {
-        const iconID = node.attribute.findNode('MapKey')?.$?.value;
-        if (iconID == null) {
-          return;
-        }
-        const xStart = parseFloat(node.attribute.findNode('U1').$.value);
-        const xEnd = parseFloat(node.attribute.findNode('U2').$.value);
-        const yStart = parseFloat(node.attribute.findNode('V1').$.value);
-        const yEnd = parseFloat(node.attribute.findNode('V2').$.value);
-        ICONS[iconID] = { xStart, xEnd, yStart, yEnd, ddsPath };
-      }),
-    );
+    if (xml != null) {
+      xml.save.region.forEach((region) =>
+        region.node[0].children[0].node.forEach((node) => {
+          const iconID = node.attribute.findNode('MapKey')?.$?.value;
+          if (iconID == null) {
+            return;
+          }
+          const xStart = parseFloat(node.attribute.findNode('U1').$.value);
+          const xEnd = parseFloat(node.attribute.findNode('U2').$.value);
+          const yStart = parseFloat(node.attribute.findNode('V1').$.value);
+          const yEnd = parseFloat(node.attribute.findNode('V2').$.value);
+          ICONS[iconID] = { xStart, xEnd, yStart, yEnd, ddsPath };
+        }),
+      );
+    }
   }
 }
 

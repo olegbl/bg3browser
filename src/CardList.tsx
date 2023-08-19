@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { IEntity } from './Types';
 
 import Card from './Card';
+import ErrorBoundary from './ErrorBoundary';
 
 type Props = {
   entities: IEntity[];
@@ -10,20 +11,23 @@ type Props = {
 
 function CardList({ entities }: Props) {
   return (
-    <div className="list">
-      {entities.map((entity) => {
-        return (
-          <a
-            key={entity.id}
-            className="list-item"
-            href={entity.linkURL}
-            target="_blank"
-            rel="noreferrer">
-            <Card entity={entity} />
-          </a>
-        );
-      })}
-    </div>
+    <ErrorBoundary>
+      <div className="list">
+        {entities.map((entity) => {
+          return (
+            <ErrorBoundary key={entity.id}>
+              <a
+                className="list-item"
+                href={entity.linkURL}
+                target="_blank"
+                rel="noreferrer">
+                <Card entity={entity} />
+              </a>
+            </ErrorBoundary>
+          );
+        })}
+      </div>
+    </ErrorBoundary>
   );
 }
 

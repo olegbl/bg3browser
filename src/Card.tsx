@@ -7,6 +7,66 @@ import { useIsDebugModeEnabled } from './DebugContext';
 import { useMeasurementsAdapters } from './MeasurementsContext';
 import ParametrizedText from './ParametrizedText';
 
+// antd's prevalence for modifying direct children while
+// prevnets them from being wrapped in proper React components
+// is a very bad design choice
+function getDescriptionRow({
+  debug,
+  key = null,
+  label,
+  id = null,
+  name = null,
+  description,
+  descriptionParams = [],
+  iconURL = null,
+  children,
+}: {
+  debug: boolean;
+  key?: string | null;
+  label: string;
+  id?: string | null;
+  name?: string | null;
+  description: string;
+  descriptionParams?: string[];
+  iconURL?: string | null;
+  children?: React.ReactNode;
+}) {
+  if (description == null) {
+    return null;
+  }
+  return (
+    <React.Fragment key={key}>
+      <antd.Descriptions.Item label={label} span={3}>
+        <div className="card-description-label">
+          {iconURL && (
+            <antd.Avatar
+              className="card-description-label-icon"
+              shape="square"
+              size={36}
+              src={iconURL}
+            />
+          )}
+          <span>
+            {name && (
+              <>
+                <span className="passive-label">{name}</span>:{' '}
+              </>
+            )}
+            <span>
+              <ParametrizedText
+                value={description}
+                params={descriptionParams}
+              />
+              {debug && id && ` (${id})`}
+            </span>
+          </span>
+        </div>
+      </antd.Descriptions.Item>
+      {children}
+    </React.Fragment>
+  );
+}
+
 const CARD_RARITY_CLASSES: { [key: string]: string | null } = {
   Common: 'card-rarity-common',
   Uncommon: 'card-rarity-uncommon',
@@ -21,7 +81,6 @@ type Props = {
 
 function Card({ entity }: Props) {
   const [debug] = useIsDebugModeEnabled();
-  const { token } = antd.theme.useToken();
   const { getDistance, getWeight } = useMeasurementsAdapters();
 
   return (
@@ -73,59 +132,58 @@ function Card({ entity }: Props) {
                 {damage}
               </antd.Descriptions.Item>
             ))}
-            {entity.metadata.range && (
-              <antd.Descriptions.Item label="Range" span={3}>
-                {getDistance(entity.metadata.range)}
-              </antd.Descriptions.Item>
+            {entity.metadata.range &&
+              getDescriptionRow({
+                debug,
+                label: 'Range',
+                description: getDistance(entity.metadata.range),
+              })}
+            {entity.metadata.boosts?.map((boost) =>
+              getDescriptionRow({
+                debug,
+                key: boost.id,
+                label: 'Boost',
+                id: boost.id,
+                description: boost.description,
+                descriptionParams: boost.descriptionParams,
+              }),
             )}
-            {entity.metadata.boosts?.map((boost) => (
-              <antd.Descriptions.Item key={boost.id} label="Boost" span={3}>
-                <ParametrizedText
-                  value={boost.description}
-                  params={boost.descriptionParams}
-                />
-                {debug && ` (${boost.id})`}
-              </antd.Descriptions.Item>
-            ))}
-            {entity.metadata.passives?.map((passive) => (
-              <React.Fragment key={passive.name}>
-                <antd.Descriptions.Item label="Passive" span={3}>
-                  <div className="card-description-label">
-                    {passive.iconURL && (
-                      <antd.Avatar
-                        className="card-description-label-icon"
-                        shape="square"
-                        size={36}
-                        src={passive.iconURL}
-                      />
-                    )}
-                    <span>
-                      <span className="passive-label">{passive.name}</span>:{' '}
-                      <span>
-                        <ParametrizedText
-                          value={passive.description}
-                          params={passive.descriptionParams}
-                        />
-                        {debug && ` (${passive.id})`}
-                      </span>
-                    </span>
-                  </div>
-                </antd.Descriptions.Item>
-                {debug &&
-                  passive.boosts?.map((boost) => (
-                    <antd.Descriptions.Item
-                      key={boost.id}
-                      label="Boost"
-                      span={3}>
-                      <ParametrizedText
-                        value={boost.description}
-                        params={boost.descriptionParams}
-                      />
-                      {debug && ` (${boost.id})`}
-                    </antd.Descriptions.Item>
-                  ))}
-              </React.Fragment>
-            ))}
+            {entity.metadata.passives?.map((passive) =>
+              getDescriptionRow({
+                debug,
+                key: passive.id,
+                label: 'Passive',
+                name: passive.name,
+                id: passive.id,
+                description: passive.description,
+                descriptionParams: passive.descriptionParams,
+                iconURL: passive.iconURL,
+                children:
+                  debug &&
+                  passive.boosts?.map((boost) =>
+                    getDescriptionRow({
+                      debug,
+                      key: boost.id,
+                      label: 'Boost',
+                      id: boost.id,
+                      description: boost.description,
+                      descriptionParams: boost.descriptionParams,
+                    }),
+                  ),
+              }),
+            )}
+            {entity.metadata.spells?.map((spell) =>
+              getDescriptionRow({
+                debug,
+                key: spell.id,
+                label: 'Ability',
+                name: spell.name,
+                id: spell.id,
+                description: spell.description,
+                descriptionParams: spell.descriptionParams,
+                iconURL: spell.iconURL,
+              }),
+            )}
             {entity.metadata.weight && (
               <antd.Descriptions.Item label="Weight" span={3}>
                 {getWeight(entity.metadata.weight)}

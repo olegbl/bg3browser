@@ -23,7 +23,12 @@ const TRANSLATED_BOOSTS = [
 const UNTRANSLATED_BOOSTS = new Set();
 
 Array.prototype.toBoosts = function () {
-  return this.filter((boost) => (boost ?? '') !== '').map((boost) => ({
+  return this.filter(
+    (boost) =>
+      (boost ?? '') !== '' &&
+      // already handled by tags
+      boost !== 'WeaponProperty(Magical)',
+  ).map((boost) => ({
     id: boost,
     description: boost,
     descriptionParams: [],

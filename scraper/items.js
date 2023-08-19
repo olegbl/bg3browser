@@ -86,12 +86,14 @@ async function getItems() {
     const properties = entry.GetDataArray('Weapon Properties');
     const groups = entry.GetDataArray('Proficiency Group');
 
+    // get boosts
     let boosts = [
       ...entry.GetDataArray('Boosts').toBoosts(),
       ...entry.GetDataArray('DefaultBoosts').toBoosts(),
       ...entry.GetDataArray('BoostsOnEquipMainHand').toBoosts(),
     ];
 
+    // get passives
     const passiveIDs = [
       ...entry.GetDataArray('PassivesMainHand'),
       ...entry.GetDataArray('PassivesOnEquip'),
@@ -104,19 +106,35 @@ async function getItems() {
       }
     }
 
-    let armor = null;
-    const armorClass = entry.GetData('ArmorClass');
+    // get spells / abilities
+    let spells = [];
+    boosts = boosts.filter((boost) => {
+      const match = boost.id.match(/^UnlockSpell\((.*)\)$/);
+      if (match) {
+        spells.push(match[1]);
+        return false;
+      }
+
+      return true;
+    });
+    for (let i = 0; i < spells.length; i++) {
+      spells[i] = await spells[i].toSpell();
+    }
+    spells = spells.filter((spell) => spell != null);
+
+    let armorClass = null;
+    const armorClassBase = entry.GetData('ArmorClass');
     const armorClassAbility = entry.GetData('Armor Class Ability');
     const armorClassAbilityCap = entry.GetData('Ability Modifier Cap');
-    if (armorClass != null) {
+    if (armorClassBase != null) {
       // add base armor class
-      armor = [armorClass];
+      armorClass = [armorClassBase];
 
       // add armor class from boosts
       boosts = boosts.filter((boost) => {
         const enchantment = boost.id.match(/AC\((\d+)\)/);
         if (enchantment) {
-          armor.push(enchantment[1]);
+          armorClass.push(enchantment[1]);
           return false;
         }
 
@@ -126,16 +144,16 @@ async function getItems() {
       // add armor class from attributes
       if (armorClassAbility != null && armorClassAbility !== 'None') {
         if ((armorClassAbilityCap ?? '') === '') {
-          armor.push(`${armorClassAbility} Modifier`);
+          armorClass.push(`${armorClassAbility} Modifier`);
         } else {
-          armor.push(
+          armorClass.push(
             `${armorClassAbility} Modifier (Max ${armorClassAbilityCap})`,
           );
         }
       }
 
       // stringify
-      armor = armor.join(' + ');
+      armorClass = armorClass.join(' + ');
     }
 
     const damages = [];
@@ -200,13 +218,14 @@ async function getItems() {
         damageType,
       ]),
       metadata: {
-        armorClass: armor,
+        armorClass,
         boosts,
         damages,
         food: entry.GetData('SupplyValue'),
         passives,
         range: entry.GetData('WeaponRange'),
         rarity,
+        spells,
         templateID,
         weight: entry.GetData('Weight'),
       },

@@ -103,6 +103,20 @@ function Content() {
                 )
                   .toLowerCase()
                   .includes(plainToken),
+              ) ||
+              // the token can match one of the spells
+              entity.metadata.spells?.some(
+                (spell) =>
+                  // the token can be a part of the name
+                  spell.name.toLowerCase().includes(plainToken) ||
+                  // the token can be a part of the description
+                  getParametrizeString(
+                    spell.description,
+                    spell.descriptionParams,
+                    getDistance,
+                  )
+                    .toLowerCase()
+                    .includes(plainToken),
               );
             return isInverted ? !matches : matches;
           }),

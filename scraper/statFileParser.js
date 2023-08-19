@@ -9,6 +9,9 @@ function unquote(value) {
 const statRegex = /^[^"]* |".*?"| /g;
 
 async function readStatFile(file) {
+  if (!(await fs.existsSync(file))) {
+    return null;
+  }
   logger.debug(`reading stat file ${file}`);
   const rawData = await fs.readFileSync(file);
   const lines = String(rawData).split('\n');

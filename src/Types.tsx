@@ -13,6 +13,14 @@ export type IPassive = {
   boosts: IBoost[];
 };
 
+export type ISpell = {
+  id: string;
+  name: string;
+  description: string;
+  descriptionParams: string[];
+  iconURL: string | null;
+};
+
 export type IEntity = {
   id: string;
   name: string;
@@ -28,6 +36,7 @@ export type IEntity = {
     passives: IPassive[];
     range: string | null;
     rarity: string | null;
+    spells: ISpell[];
     templateID: string | null;
     weight: string | null;
   };

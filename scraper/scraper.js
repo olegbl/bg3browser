@@ -5,6 +5,7 @@ const { readIconFiles } = require('./iconFileParser');
 const { getItems } = require('./items');
 const { logger } = require('./logger');
 const { readPassives } = require('./passives');
+const { readSpells } = require('./spells');
 const { readEnglishTranslations } = require('./translations');
 
 async function scrapeData() {
@@ -12,6 +13,7 @@ async function scrapeData() {
 
   await readEnglishTranslations();
   await readIconFiles();
+  await readSpells();
   await readPassives();
 
   const items = await getItems();
