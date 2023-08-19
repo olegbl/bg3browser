@@ -5,11 +5,10 @@ import * as antd from 'antd';
 import * as icons from '@ant-design/icons';
 
 import CardList from './CardList';
-import DebugContextProvider, { useIsDebugModeEnabled } from './DebugContext';
-import MeasurementsContextProvider, {
-  useMeasurementsMode,
-} from './MeasurementsContext';
-import ThemeContextProvider, { useThemePreference } from './ThemeContext';
+import DebugContextProvider from './DebugContext';
+import MeasurementsContextProvider from './MeasurementsContext';
+import SettingsButton from './SettingsButton';
+import ThemeContextProvider from './ThemeContext';
 
 import data from './data';
 import useUrlState from './useUrlState';
@@ -29,10 +28,6 @@ function Content() {
   const [isPending, startTransition] = React.useTransition();
 
   const { token: themeToken } = antd.theme.useToken();
-
-  const [debug, setDebug] = useIsDebugModeEnabled();
-  const [themePreference, setThemePreference] = useThemePreference();
-  const [measurementsMode, setMeasurementsMode] = useMeasurementsMode();
 
   const [queryString, setQueryString] = useUrlState<string>('q', '');
   const [query, setQuery] = React.useState(queryString);
@@ -115,60 +110,7 @@ function Content() {
               size="large"
             />
           </antd.AutoComplete>
-          <antd.Dropdown
-            menu={{
-              items: [
-                {
-                  key: 'imperial',
-                  label:
-                    'Measurements: ' +
-                    (measurementsMode === 'imperial' ? 'Imperial' : 'Metric'),
-                },
-                {
-                  key: 'theme',
-                  label:
-                    'Theme: ' +
-                    (themePreference === 'system'
-                      ? 'System'
-                      : themePreference === 'light'
-                      ? 'Light'
-                      : themePreference === 'dark'
-                      ? 'Dark'
-                      : 'Unknown'),
-                },
-                {
-                  key: 'debug',
-                  label: 'Debug Mode: ' + (debug ? 'Enabled' : 'Disabled'),
-                },
-              ],
-              onClick: (event) => {
-                if (event.key === 'imperial') {
-                  setMeasurementsMode((value) =>
-                    value === 'metric' ? 'imperial' : 'metric',
-                  );
-                }
-                if (event.key === 'theme') {
-                  setThemePreference((value) =>
-                    value === 'system'
-                      ? 'light'
-                      : value === 'light'
-                      ? 'dark'
-                      : value === 'dark'
-                      ? 'system'
-                      : 'system',
-                  );
-                }
-                if (event.key === 'debug') {
-                  setDebug((value) => !value);
-                }
-              },
-            }}>
-            <antd.Button
-              className="settings-button"
-              icon={<icons.SettingOutlined />}
-              size="large"
-            />
-          </antd.Dropdown>
+          <SettingsButton />
           <div
             className="top-bar-content-transition"
             style={{

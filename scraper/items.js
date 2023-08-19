@@ -158,7 +158,7 @@ async function getItems() {
       boosts = boosts.filter((boost) => {
         const enchantment = boost.id.match(/WeaponEnchantment\((\d+)\)/);
         if (enchantment) {
-          damages.forEach((d) => d?.push(enchantment[1]));
+          damages.forEach((d) => d?.push(`${enchantment[1]} (Enchantment)`));
           return false;
         }
 
