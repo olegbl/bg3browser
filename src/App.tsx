@@ -25,8 +25,8 @@ const TAGS: Set<string> = new Set(
   ),
 );
 
-const QUERY_REGEXP = new RegExp('".*?"|[^\\s]+', 'g');
-const QUOTEED_TOKEN_REGEXP = new RegExp('^"(.*)"$');
+const QUERY_REGEXP = new RegExp('-?(?:[a-zA-Z]+:)?".*?"|[^\\s]+', 'g');
+const QUOTEED_TOKEN_REGEXP = new RegExp('^(-)?([a-zA-Z]+:)?"(.*)"$');
 
 function Content() {
   // @ts-ignore
@@ -41,7 +41,7 @@ function Content() {
   const queryTokens = React.useMemo(
     () =>
       (query.toLowerCase().match(QUERY_REGEXP) ?? []).map((token) =>
-        token.replace(QUOTEED_TOKEN_REGEXP, '$1'),
+        token.replace(QUOTEED_TOKEN_REGEXP, '$1$2$3'),
       ),
     [query],
   );
