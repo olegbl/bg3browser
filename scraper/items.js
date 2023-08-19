@@ -151,7 +151,11 @@ async function getItems() {
 
       // add damage type
       if ((damageType ?? '') !== '') {
-        damages.forEach((d) => d?.push(` (${damageType})`));
+        damages.forEach((d) => {
+          if (d != null && d.length > 0) {
+            d[0] = `${d[0]} (${damageType})`;
+          }
+        });
       }
 
       // add damage from boosts

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 
 function serializeImplicit<T>(value: T): string {
-  return String(value);
+  return JSON.stringify(value);
 }
 
 function deserializeImplicit<T>(value: string): T {
-  return value as unknown as T;
+  return JSON.parse(value) as unknown as T;
 }
 
 export default function useUrlState<T>(

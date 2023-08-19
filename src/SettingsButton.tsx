@@ -9,7 +9,7 @@ import { useIsDebugModeEnabled } from './DebugContext';
 import { useMeasurementsMode } from './MeasurementsContext';
 import { useThemePreference } from './ThemeContext';
 
-function PreferencesButton() {
+function SettingsButton() {
   const [debug, setDebug] = useIsDebugModeEnabled();
   const [themePreference, setThemePreference] = useThemePreference();
   const [measurementsMode, setMeasurementsMode] = useMeasurementsMode();
@@ -67,7 +67,11 @@ function PreferencesButton() {
         footer={null}
         onCancel={() => setIsShown(false)}>
         {ITEMS.map(({ label, content }) => (
-          <antd.Row align="middle" justify="center" className="settings-row">
+          <antd.Row
+            key={label}
+            align="middle"
+            justify="center"
+            className="settings-row">
             <antd.Col span={8} className="settings-row-label">
               {label}
             </antd.Col>
@@ -129,4 +133,4 @@ function PreferencesButton() {
   // }}
 }
 
-export default React.memo(PreferencesButton);
+export default React.memo(SettingsButton);

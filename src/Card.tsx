@@ -4,7 +4,6 @@ import * as antd from 'antd';
 import type { IEntity } from './Types';
 
 import { useIsDebugModeEnabled } from './DebugContext';
-import FormulaText from './FormulaText';
 import { useMeasurementsAdapters } from './MeasurementsContext';
 import ParametrizedText from './ParametrizedText';
 
@@ -81,7 +80,10 @@ function Card({ entity }: Props) {
             )}
             {entity.metadata.boosts?.map((boost) => (
               <antd.Descriptions.Item key={boost.id} label="Boost" span={3}>
-                <FormulaText value={boost.label} />
+                <ParametrizedText
+                  value={boost.description}
+                  params={boost.descriptionParams}
+                />
                 {debug && ` (${boost.id})`}
               </antd.Descriptions.Item>
             ))}
@@ -99,7 +101,7 @@ function Card({ entity }: Props) {
                     )}
                     <span>
                       <span className="passive-label">{passive.name}</span>:{' '}
-                      <span style={{ color: token.colorTextSecondary }}>
+                      <span>
                         <ParametrizedText
                           value={passive.description}
                           params={passive.descriptionParams}
@@ -115,7 +117,10 @@ function Card({ entity }: Props) {
                       key={boost.id}
                       label="Boost"
                       span={3}>
-                      {boost.label}
+                      <ParametrizedText
+                        value={boost.description}
+                        params={boost.descriptionParams}
+                      />
                       {debug && ` (${boost.id})`}
                     </antd.Descriptions.Item>
                   ))}

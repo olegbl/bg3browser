@@ -6,12 +6,15 @@ import * as icons from '@ant-design/icons';
 
 import CardList from './CardList';
 import DebugContextProvider from './DebugContext';
-import MeasurementsContextProvider from './MeasurementsContext';
+import MeasurementsContextProvider, {
+  useMeasurementsAdapters,
+} from './MeasurementsContext';
 import SettingsButton from './SettingsButton';
 import ThemeContextProvider from './ThemeContext';
 
 import data from './data';
 import useUrlState from './useUrlState';
+import { getParametrizeString } from './ParametrizedText';
 
 const TAGS: Set<string> = new Set(
   data.reduce(
@@ -28,6 +31,7 @@ function Content() {
   const [isPending, startTransition] = React.useTransition();
 
   const { token: themeToken } = antd.theme.useToken();
+  const { getDistance } = useMeasurementsAdapters();
 
   const [queryString, setQueryString] = useUrlState<string>('q', '');
   const [query, setQuery] = React.useState(queryString);
@@ -81,7 +85,24 @@ function Content() {
                   // the token can be a part of the name
                   passive.name?.toLowerCase()?.includes(plainToken) ||
                   // the token can be a part of the description
-                  passive.description?.toLowerCase()?.includes(plainToken),
+                  getParametrizeString(
+                    passive.description,
+                    passive.descriptionParams,
+                    getDistance,
+                  )
+                    .toLowerCase()
+                    .includes(plainToken),
+              ) ||
+              // the token can match one of the boosts
+              entity.metadata.boosts?.some((boost) =>
+                // the token can be a part of the description
+                getParametrizeString(
+                  boost.description,
+                  boost.descriptionParams,
+                  getDistance,
+                )
+                  .toLowerCase()
+                  .includes(plainToken),
               );
             return isInverted ? !matches : matches;
           }),

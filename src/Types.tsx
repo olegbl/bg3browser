@@ -1,15 +1,16 @@
 export type IBoost = {
   id: string;
-  label: string;
+  description: string;
+  descriptionParams: string[];
 };
 
 export type IPassive = {
-  boosts?: IBoost[] | null;
-  description?: string | null;
-  descriptionParams?: string[] | null;
-  iconURL?: string | null;
   id: string;
-  name?: string | null;
+  name: string;
+  description: string;
+  descriptionParams: string[];
+  iconURL: string | null;
+  boosts: IBoost[];
 };
 
 export type IEntity = {
@@ -20,14 +21,14 @@ export type IEntity = {
   linkURL: string;
   tags: string[];
   metadata: {
-    armorClass?: string | null;
-    boosts?: IBoost[] | null;
-    damages?: string[] | null;
-    food?: string | null;
-    passives?: IPassive[] | null;
-    range?: string | null;
-    rarity?: string | null;
-    templateID?: string | null;
-    weight?: string | null;
+    armorClass: string | null;
+    boosts: IBoost[];
+    damages: string[];
+    food: string | null;
+    passives: IPassive[];
+    range: string | null;
+    rarity: string | null;
+    templateID: string | null;
+    weight: string | null;
   };
 };
