@@ -17,7 +17,7 @@ const ITEM_SLOTS = {
   Gloves: ['Gloves'],
   Helmet: ['Helmet'],
   'Melee Main Weapon': ['Weapon', 'Melee'],
-  'Melee Offhand Weapon': ['Weapon', 'Melee', 'Offhand'],
+  'Melee Offhand Weapon': ['Offhand'], // actually: shield
   MusicalInstrument: ['Musical Instrument'],
   'Ranged Main Weapon': ['Weapon', 'Ranged'],
   Ring: ['Ring'],

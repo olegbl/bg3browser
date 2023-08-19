@@ -80,7 +80,12 @@ function Content() {
               // the token can be a part of the description
               entity.description.toLowerCase().includes(plainToken) ||
               // the token can match one of the tags
-              entity.tags.some((tag) => tag.toLowerCase() === plainToken) ||
+              entity.tags.some(
+                (tag) =>
+                  tag.toLowerCase() === plainToken ||
+                  // allow prefixing search tokens with "tag:" to filter only on tags
+                  `tag:${tag.toLowerCase()}` === plainToken,
+              ) ||
               // the token can match one of the passives
               entity.metadata.passives?.some(
                 (passive) =>
