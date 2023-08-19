@@ -2,14 +2,11 @@ const { logger } = require('./logger');
 
 const UNTRANSLATED_BOOSTS = new Set();
 
-String.prototype.toBoosts = function () {
-  return this.split(';')
-    .map((boost) => boost.trim())
-    .filter((boost) => boost.isBoostShown())
-    .map((boost) => ({
-      id: boost,
-      label: boost.translateBoost(),
-    }));
+Array.prototype.toBoosts = function () {
+  return this.filter((boost) => boost.isBoostShown()).map((boost) => ({
+    id: boost,
+    label: boost.translateBoost(),
+  }));
 };
 
 String.prototype.translateBoost = function () {

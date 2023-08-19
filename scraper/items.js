@@ -83,18 +83,18 @@ async function getItems() {
 
     const rarity = entry.GetData('Rarity') ?? 'Common';
     const slots = ITEM_SLOTS[entry.GetData('Slot')] ?? [];
-    const properties = entry.GetData('Weapon Properties')?.split(';') ?? [];
-    const groups = entry.GetData('Proficiency Group')?.split(';') ?? [];
+    const properties = entry.GetDataArray('Weapon Properties');
+    const groups = entry.GetDataArray('Proficiency Group');
 
     let boosts = [
-      ...(entry.GetData('Boosts')?.toBoosts() ?? []),
-      ...(entry.GetData('DefaultBoosts')?.toBoosts() ?? []),
-      ...(entry.GetData('BoostsOnEquipMainHand')?.toBoosts() ?? []),
+      ...entry.GetDataArray('Boosts').toBoosts(),
+      ...entry.GetDataArray('DefaultBoosts').toBoosts(),
+      ...entry.GetDataArray('BoostsOnEquipMainHand').toBoosts(),
     ];
 
     const passiveIDs = [
-      ...(entry.GetData('PassivesMainHand')?.split(';') ?? []),
-      ...(entry.GetData('PassivesOnEquip')?.split(';') ?? []),
+      ...entry.GetDataArray('PassivesMainHand'),
+      ...entry.GetDataArray('PassivesOnEquip'),
     ];
     const passives = [];
     for (const passiveID of passiveIDs) {

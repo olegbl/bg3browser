@@ -4,8 +4,9 @@ import * as antd from 'antd';
 import type { IEntity } from './Types';
 
 import { useIsDebugModeEnabled } from './DebugContext';
-import GameText from './GameText';
+import FormulaText from './FormulaText';
 import { useMeasurementsAdapters } from './MeasurementsContext';
+import ParametrizedText from './ParametrizedText';
 
 const CARD_RARITY_CLASSES: { [key: string]: string | null } = {
   Common: 'card-rarity-common',
@@ -41,7 +42,7 @@ function Card({ entity }: Props) {
         <antd.Space className="card-info" direction="vertical">
           <antd.Typography className="card-name">{entity.name}</antd.Typography>
           <antd.Typography>
-            <GameText value={entity.description} />
+            <ParametrizedText value={entity.description} />
             {debug &&
               ` (Entry: ${entity.id.split(':')[0]}, Template: ${
                 entity.metadata.templateID
@@ -80,7 +81,7 @@ function Card({ entity }: Props) {
             )}
             {entity.metadata.boosts?.map((boost) => (
               <antd.Descriptions.Item key={boost.id} label="Boost" span={3}>
-                {boost.label}
+                <FormulaText value={boost.label} />
                 {debug && ` (${boost.id})`}
               </antd.Descriptions.Item>
             ))}
@@ -99,7 +100,7 @@ function Card({ entity }: Props) {
                     <span>
                       <span className="passive-label">{passive.name}</span>:{' '}
                       <span style={{ color: token.colorTextSecondary }}>
-                        <GameText
+                        <ParametrizedText
                           value={passive.description}
                           params={passive.descriptionParams}
                         />

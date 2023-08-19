@@ -72,6 +72,11 @@ async function readAndParseStatFiles(files) {
       }
       return null;
     };
+    entry.GetDataArray = (key) => {
+      return (entry.GetData(key)?.split(';') ?? []).map((value) =>
+        value.trim(),
+      );
+    };
   }
 
   return entries;

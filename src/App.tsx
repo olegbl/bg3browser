@@ -73,8 +73,16 @@ function Content() {
               entity.name.toLowerCase().includes(plainToken) ||
               // the token can be a part of the description
               entity.description.toLowerCase().includes(plainToken) ||
-              // the token can equal one of the tags
-              entity.tags.map((tag) => tag.toLowerCase()).includes(plainToken);
+              // the token can match one of the tags
+              entity.tags.some((tag) => tag.toLowerCase() === plainToken) ||
+              // the token can match one of the passives
+              entity.metadata.passives?.some(
+                (passive) =>
+                  // the token can be a part of the name
+                  passive.name?.toLowerCase()?.includes(plainToken) ||
+                  // the token can be a part of the description
+                  passive.description?.toLowerCase()?.includes(plainToken),
+              );
             return isInverted ? !matches : matches;
           }),
       ),

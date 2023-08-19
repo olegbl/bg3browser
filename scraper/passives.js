@@ -33,25 +33,27 @@ String.prototype.toPassive = async function () {
 
   const nameHandle = entry.GetData('DisplayName');
   const name = nameHandle?.translate() ?? '';
+  const descriptionHandle = entry.GetData('Description');
+  const description = descriptionHandle?.translate() ?? '';
+  const descriptionParams = entry.GetDataArray('DescriptionParams');
+  const icon = entry.GetData('Icon');
+  const iconURL = icon == null ? null : await icon.toIconURI();
+  const boosts = entry.GetDataArray('Boosts').toBoosts();
+  const properties = entry.GetDataArray('Properties');
+
+  if (properties.includes('IsHidden')) {
+    return null;
+  }
+
   if (!name) {
     logger.warn(`could not find name for passive "${id}" (${nameHandle})`);
   }
 
-  const descriptionHandle = entry.GetData('Description');
-  const description = descriptionHandle?.translate() ?? '';
   if (!name) {
     logger.warn(
       `could not find description for passive "${id}" (${descriptionHandle})`,
     );
   }
-
-  const descriptionParams = (
-    entry.GetData('DescriptionParams')?.split(';') ?? []
-  ).map((param) => param.trim());
-
-  const icon = entry.GetData('Icon');
-  const iconURL = icon == null ? null : await icon.toIconURI();
-  const boosts = entry.GetData('Boosts')?.toBoosts() ?? [];
 
   return {
     id,
