@@ -141,10 +141,16 @@ async function readIconFiles() {
   }
 }
 
+const URIS = {};
+
 String.prototype.toIconURI = async function toIconURI() {
   const iconID = this;
   if (iconID === '') {
     return null;
+  }
+
+  if (URIS[iconID]) {
+    return URIS[iconID];
   }
 
   const { xStart, xEnd, yStart, yEnd, ddsPath } =
@@ -168,7 +174,9 @@ String.prototype.toIconURI = async function toIconURI() {
   const buffer = await sharp(pngBuffer)
     .extract({ left, top, width, height })
     .toBuffer();
-  return `data:image/png;base64,${buffer.toString('base64')}`;
+  const iconURI = `data:image/png;base64,${buffer.toString('base64')}`;
+  URIS[iconID] = iconURI;
+  return iconURI;
 };
 
 module.exports = { readDDSFile, readIconFiles };
