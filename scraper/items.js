@@ -126,9 +126,11 @@ async function getItems() {
       // add armor class from attributes
       if (armorClassAbility != null && armorClassAbility !== 'None') {
         if ((armorClassAbilityCap ?? '') === '') {
-          armor.push(armorClassAbility);
+          armor.push(`${armorClassAbility} Modifier`);
         } else {
-          armor.push(`${armorClassAbility} (Max ${armorClassAbilityCap})`);
+          armor.push(
+            `${armorClassAbility} Modifier (Max ${armorClassAbilityCap})`,
+          );
         }
       }
 

@@ -72,6 +72,13 @@ const ICON_FILES = [
       'Public/Shared/Assets/Textures/Icons/Icons_Skills.dds',
     ),
   ],
+  [
+    getFilePath('Shared.pak', 'Public/SharedDev/GUI/Icons_Skills.lsx'),
+    getFilePath(
+      'Icons.pak',
+      'Public/SharedDev/Assets/Textures/Icons/Icons_Skills.dds',
+    ),
+  ],
 ];
 
 async function readDDSFile(file) {
